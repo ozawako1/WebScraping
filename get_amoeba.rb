@@ -22,7 +22,12 @@ ARGV.each { |arg|
 agent = Mechanize.new
 agent.user_agent = "My User Agent"
 agent.set_proxy("192.168.106.144", 8080) if use_proxy == 1
-login_info = Hash["CompanyCD"=>"29", "UserID"=>"960350592", "Password"=>"60844254"]
+
+cd = get_config("Amoeba","CompanyCode")
+id = get_config("Amoeba","ID")
+pd = get_config("Amoeba","Password")
+
+login_info = Hash["CompanyCD"=>cd, "UserID"=>id, "Password"=>pd]
 csvpath = "/Users/OzawaKoichi/Develop/output"
 
 const = CConstAmoeba.new()
