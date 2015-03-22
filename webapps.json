@@ -2,10 +2,10 @@
 	"Harvest":{
 		"ID"		: "xxx",
 		"Password"	: "xxx"
-	}
+	},
 	"Amoeba":{
-		"CompanyCode"	: "xxx"
-		"ID"	: "xxx"
+		"CompanyCode"	: "xxx",
+		"ID"	: "xxx",
 		"Password"	: "xxx"
 	}
 }
