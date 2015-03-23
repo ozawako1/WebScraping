@@ -48,9 +48,14 @@ class CWebApp
 	end
 
 	def Login(page_login, f_login, info_login)
-
+        
 		l_page = @base_url + page_login
-		p = @agent.get(l_page)
+		
+p ("Login: " + l_page) if @debug == 1
+p ("Form : " + f_login) if @debug == 1
+p ("User : " + info_login.to_s) if @debug == 1
+        
+        p = @agent.get(l_page)
 		if (p == nil)
 			raise "Page Not Found. [" + page_login + "]"
 		end
@@ -72,12 +77,13 @@ class CWebApp
 	end
     
     def Go(url)
-        p url if @debug == 1
+p ("Page :" + url) if @debug == 1
         @agent.get(@base_url + url)
     end
     
     def Jump(url, script = 0)
         pre_jump(script)
+p ("Page :" + url) if @debug == 1
         @agent.get(@base_url + url)
         post_jump(script)
 	end
