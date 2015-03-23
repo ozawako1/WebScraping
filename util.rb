@@ -57,11 +57,13 @@ def get_first_day_of_week()
 end
 
 def get_first_day_of_amoebamonth()
+
+    # get the last day of last month
     d = Date.new(Time.now.year, Time.now.month, 1)
     d = d - 1
     
-    diff = 0
-    
+    # check if it was work day
+    # if not rewind 1 day
     while (true) do
         if (1 < d.wday && d.wday < 6)
             break

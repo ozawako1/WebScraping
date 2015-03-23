@@ -8,21 +8,29 @@ require "nokogiri"
 require_relative "CWebApp"
 require_relative "CConst"
 require_relative "util"
+require_relative "proc"
 
-def separate_value(line, arr)
-    shain_code = line.css("span.first_name").text.strip
-    huser_code = line.css("a.edit-button").attribute("href").value.strip
-    pos1 = huser_code.index("/", 1)
-    pos2 = huser_code.index("/", pos1 + 1)
-    huser_code = huser_code[pos1 + 1, pos2 - pos1 - 1]
-    
-    itm = Array.new
-    itm.push(shain_code)
-    itm.push(huser_code)
-    
-    arr.push(itm)
-end
+# this program will give you a file "harvest_user_master.csv"
+# the file consist
+# EmployeeCode : 9 digits text such as "040450592"
+# HarvestUserID : ID for Harvest Internal Use
+# Email Address :
+# DepertmentCode : 8 digits text such as "27E50510"
 
+use_proxy = 0
+use_debug = 0
+
+ARGV.each { |arg|
+    case arg
+    when "PROXY"
+        use_proxy = 1
+    when "DEBUG"
+        use_debug = 1
+    else
+        puts("undefined arg. [" + arg + "]")
+        exit
+    end
+}
 
 const = CConstHarvest.new()
 agent = Mechanize.new
@@ -39,9 +47,10 @@ csvpath = "/Users/OzawaKoichi/Develop/output"
 site = CWebAppHarvest.new(agent, "https://motex.harvestapp.com")
 if site == nil
 	puts("Init Error.")
+    exit
 end
+site.debug = use_debug
 
-site.debug = 1
 
 begin
     # Login
@@ -51,8 +60,9 @@ begin
     site.Go("/people")
     
     # save user list to csv
-    data = site.RetrieveList("li.manage-list-item", method(:separate_value))
+    data = site.RetrieveList("li.manage-list-item", method(:proc_split_list_to_array))
     
+    # append email and deptNo.
     data.each do |member|
         site.Go("/people/" + member[1] + "/edit#profile_base")
         
@@ -62,6 +72,7 @@ begin
         
     end
     
+    # flush to file
     flush_to_csv(data, csvpath + "/harvest_user_master.csv")
     
 rescue => e
