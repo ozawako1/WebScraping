@@ -56,9 +56,9 @@ begin
     data.each do |member|
         site.Go("/people/" + member[1] + "/edit#profile_base")
         
-        member.push(site.RetrieveValue("#user_email").attribute("value").value.strip);
+        member.push(site.GetItem("#user_email").attribute("value").value.strip);
         
-        member.push(site.RetrieveValue("#user_department").attribute("value").value.strip);
+        member.push(site.GetItem("#user_department").attribute("value").value.strip);
         
     end
     

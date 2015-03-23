@@ -51,9 +51,9 @@ class CWebApp
         
 		l_page = @base_url + page_login
 		
-p ("Login: " + l_page) if @debug == 1
-p ("Form : " + f_login) if @debug == 1
-p ("User : " + info_login.to_s) if @debug == 1
+        p ("Login: " + l_page)          if @debug == 1
+        p ("Form : " + f_login)         if @debug == 1
+        p ("User : " + info_login.to_s) if @debug == 1
         
         p = @agent.get(l_page)
 		if (p == nil)
@@ -77,47 +77,18 @@ p ("User : " + info_login.to_s) if @debug == 1
 	end
     
     def Go(url)
-p ("Page :" + url) if @debug == 1
+        p ("Page :" + url) if @debug == 1
+        
         @agent.get(@base_url + url)
     end
     
     def Jump(url, script = 0)
         pre_jump(script)
-p ("Page :" + url) if @debug == 1
+        
+        p ("Page :" + url) if @debug == 1
         @agent.get(@base_url + url)
+        
         post_jump(script)
-	end
-
-	def Retrieve(row_name, is_list = 0)
-        pre_retrieve()
-        
-        summary = Array.new
-        
-        doc = Nokogiri::HTML.parse(@agent.page.body)
-        if (doc == nil)
-            raise "Document Body not found."
-        end
-        
-        rows = doc.css(row_name)
-        if (rows == nil || rows.size == 0) then
-            raise "Data Table Row not found."
-        end
-        
-        search = (is_list == 1) ? "li" : "td"
-        
-        rows.each { |r|
-            itm = Array.new
-    
-            r.xpath(search).each do |c|
-                itm.push(c.text.strip)
-            end
-            
-            summary.push(itm)
-        }
-
-        post_retrieve()
-        
-        return summary
 	end
 
     def RetrieveList(list_name, func)
@@ -141,7 +112,7 @@ p ("Page :" + url) if @debug == 1
         return summary
     end
 
-    def RetrieveValue(css)
+    def GetItem(css)
         doc = Nokogiri::HTML.parse(@agent.page.body)
         if (doc == nil)
             raise "Document Body not found."
@@ -209,7 +180,7 @@ class CWebAppHarvest < CWebApp
     
     def GetTotalHours()
         
-        hours = self.RetrieveValue("div.ds-amt")
+        hours = self.GetItem("div.ds-amt")
         val = hours[1].text
         pos = val.index("Hours")
      
@@ -220,11 +191,11 @@ end
 class CWebAppAmoeba < CWebApp
     
     def GetWorkHours()
-        val = self.RetrieveValue("#TTL_Fixed_Time_lbl")
-        hours = val[1].text.strip
+        itm = self.GetItem("#TTL_Fixed_Time_lbl")
+        hours = itm[1].text.strip
         
-        val = self.RetrieveValue("#Overtime_Daily_lbl")
-        otime = val[1].text.strip
+        itm = self.GetItem("#Overtime_Daily_lbl")
+        otime = itm[1].text.strip
         
         hours = hours.to_f + otime.to_f
         
