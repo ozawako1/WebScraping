@@ -21,7 +21,6 @@ pd = get_config("Harvest", "Password")
 hLogin = Hash["email"=>id, "user_password"=>pd]
 
 csvpath = "/Users/OzawaKoichi/Develop/output"
-const = CConstHarvest.new()
 
 #Amoeba上の第一稼働日を取得
 a_first_day = get_day_number_of_year(get_first_day_of_amoebamonth())
@@ -43,7 +42,8 @@ begin
 
     table.each do | ucode |
         
-        url = const.GetDataPage()%[a_first_day, thisyear, yesterday, thisyear, ucode[1]]
+        url = sprintf("/reports/detailed/%d/%d/%d/%d/%s/any/any/ign/ign/ign/any?group=users",
+                      a_first_day, thisyear, yesterday, thisyear, ucode[1])
         
         site.Go(url)
         

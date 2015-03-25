@@ -15,9 +15,3 @@ class CConstAmoeba < CConst
         
     end
 end
-
-class CConstHarvest < CConst
-    def initialize()
-        @data_page = "/reports/detailed/%d/%d/%d/%d/%s/any/any/ign/ign/ign/any?group=users"
-    end
-end
