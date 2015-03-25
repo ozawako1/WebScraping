@@ -44,11 +44,13 @@ end
 begin
     site.Login(AMOEBA_PAGE_LOGIN, AMOEBA_FORM, login_info)
 
-    site.Jump(const.GetDataPage(), AMOEBA_APPLY_SCRIPT)
+    site.Jump("PKTO318-1")
+    site.RunJS(AMOEBA_APPLY_SCRIPT)
     
     site.Execute(AMOEBA_FORM, AMOEBA_APPLY_SCRIPT)
     
-    site.Jump(const.GetCommitPage(), AMOEBA_APPROVE_SCRIPT)
+    site.Jump("PKTO318-2")
+    site.RunJS(AMOEBA_APPROVE_SCRIPT)
     
     site.Execute(AMOEBA_FORM, AMOEBA_APPROVE_SCRIPT)
     

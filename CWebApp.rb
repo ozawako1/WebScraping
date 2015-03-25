@@ -81,15 +81,6 @@ class CWebApp
         
         @agent.get(@base_url + url)
     end
-    
-    def Jump(url, script = 0)
-        pre_jump(script)
-        
-        p ("Page :" + url) if @debug == 1
-        @agent.get(@base_url + url)
-        
-        post_jump(script)
-	end
 
     def RetrieveList(list_name, func)
         
@@ -144,22 +135,10 @@ class CWebApp
         end
         
         f.submit
-        
-        post_execute()
     end
     
 private
-    def pre_jump(script)
-    end
-    def post_jump(script)
-    end
     def pre_execute(form, script)
-    end
-    def post_execute()
-    end
-    def pre_retrieve()
-    end
-    def post_retrieve()
     end
 end
 
@@ -190,6 +169,12 @@ end
 
 class CWebAppAmoeba < CWebApp
     
+    def Jump(menu_id)
+        path = sprintf("/Main?actionbean=Shortcut&menuID=%s&referer=%%2Fshare%%2Fmenu.jsp&isForwardManagement=1&forward_mng_menu_id=%s", menu_id, menu_id)
+        p ("Page :" + path) if @debug == 1
+        @agent.get(@base_url + path)
+    end
+    
     def GetWorkHours()
         itm = self.GetItem("#TTL_Fixed_Time_lbl")
         hours = itm[1].text.strip
@@ -202,7 +187,7 @@ class CWebAppAmoeba < CWebApp
         return hours
     end
     
-    def post_jump(script)
+    def RunJS(script)
         
         form = search_form(@agent.page, AMOEBA_FORM)
         if (form == nil)
@@ -271,8 +256,6 @@ class CWebAppAmoeba < CWebApp
         
         key_val = Hash.new
         target_date = getlastworkday()
-
-p target_date if @debug == 1
         
         case script
         when AMOEBA_APPLY_SCRIPT
