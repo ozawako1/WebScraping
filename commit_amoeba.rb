@@ -34,7 +34,7 @@ login_info = Hash["CompanyCD"=>cd, "UserID"=>id, "Password"=>pd]
 
 site = CWebAppAmoeba.new(agent, "http://10.149.0.183:9080/teams", use_debug)
 if site == nil
-	puts("Init Error.")
+    puts("Init Error.")
     exit
 end
 
@@ -56,8 +56,8 @@ begin
     mark_ran()
 
 rescue => e
-	p e
+    p e
     p e.backtrace
-	p Time.now
+    p Time.now
 
 end

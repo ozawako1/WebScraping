@@ -3,7 +3,6 @@
 
 require "mechanize"
 require_relative "CWebApp"
-require_relative "CConst"
 
 use_proxy = 0
 use_debug = 0
@@ -30,7 +29,6 @@ pd = get_config("Amoeba","Password")
 login_info = Hash["CompanyCD"=>cd, "UserID"=>id, "Password"=>pd]
 csvpath = "/Users/OzawaKoichi/Develop/output"
 
-const = CConstAmoeba.new()
 site = CWebAppAmoeba.new(agent, "http://10.149.0.183:9080/teams", use_debug)
 if site == nil
 	puts("Init Error.")

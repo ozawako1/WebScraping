@@ -5,7 +5,6 @@ require "mechanize"
 require "open-uri"
 require "nokogiri"
 require_relative "CWebApp"
-require_relative "CConst"
 require_relative "util"
 
 agent = Mechanize.new

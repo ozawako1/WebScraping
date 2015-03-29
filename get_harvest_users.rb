@@ -6,7 +6,6 @@ require "open-uri"
 require "nokogiri"
 
 require_relative "CWebApp"
-require_relative "CConst"
 require_relative "util"
 require_relative "proc"
 
@@ -32,7 +31,6 @@ ARGV.each { |arg|
     end
 }
 
-const = CConstHarvest.new()
 agent = Mechanize.new
 agent.user_agent = "My User Agent"
 
