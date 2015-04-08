@@ -6,6 +6,7 @@ require_relative "CWebApp"
 
 use_proxy = 0
 use_debug = 0
+jump_page = "/Main?referer=/teams/KTO/PKTO331%%2Fsearchlist.jsp&prepage=/sharemenu.jsp&menuID=PKTO331&forward=searchlist.jsp&service=jp.co.kccs.greenearth.erp.kto.pkto331.PersonalCalendarService&actionbean=GetList&mode=search&listsize=-1&no_header=&Objective_DT_P=%d/%02d&Time_CL_1=1&Stuff_No_0=%s&Name="
 
 ARGV.each { |arg|
 	case arg
@@ -42,7 +43,7 @@ begin
 
     table.each do | ucode |
         
-        site.Go(const.GetJumpPage()%[Time.now.year, Time.now.month, ucode[0]])
+        site.Go(jump_page%[Time.now.year, Time.now.month, ucode[0]])
         
         amoeba_hours = site.GetWorkHours()
         

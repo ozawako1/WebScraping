@@ -12,6 +12,19 @@ AMOEBA_FORM = "formMain"
 
 OT_FORM     = 1
 OT_FIELD    = 2
+OT_ANCHOR   = 3
+
+def set_options(form, keys)
+    
+    keys.each { |kv|
+        field = search_field(form, kv[0])
+        if (field == nil)
+            raise "Field Not Found. [" + kv[0] + "]"
+        end
+        field.option_with(:text => kv[1]).select
+    }
+    
+end
 
 def search_object(object_type, parent, name)
     o1 = nil
@@ -24,6 +37,8 @@ def search_object(object_type, parent, name)
     when OT_FIELD
         o1 = parent.field_with(:name => name)
         o2 = parent.field_with(:id   => name)
+    when OT_ANCHOR
+        o1 = parent.link_with(:text => name)
     end
 
     return o1 ? o1 : o2
@@ -35,6 +50,10 @@ end
 
 def search_field(form, f_name)
     return search_object(OT_FIELD, form, f_name)
+end
+
+def search_link(page, link_name)
+    return search_object(OT_ANCHOR, page, link_name)
 end
 
 class CWebApp
@@ -137,8 +156,22 @@ class CWebApp
         f.submit
     end
     
+    def FollowLink(linkName)
+        link = search_link(@agent.page, linkName)
+        if (link == nil || link.length == 0)
+            raise "Link not found."
+        end
+        link[0].click()
+    end
+    
+    def GetPage()
+        return @agent.page.body 
+    end
+    
 private
     def pre_execute(form, script)
+    end
+    def post_initialize()
     end
 end
 
@@ -171,7 +204,7 @@ class CWebAppAmoeba < CWebApp
     
     def Jump(menu_id)
         path = sprintf("/Main?actionbean=Shortcut&menuID=%s&referer=%%2Fshare%%2Fmenu.jsp&isForwardManagement=1&forward_mng_menu_id=%s", menu_id, menu_id)
-        p ("Page :" + path) if @debug == 1
+        p ("Page : " + path) if @debug == 1
         @agent.get(@base_url + path)
     end
     
@@ -315,6 +348,41 @@ class CWebAppAmoeba < CWebApp
         
     end
     
-
 end
+
+class CWebAppEco < CWebApp
+    
+    def initialize(agent, b_url, dbg = 0)
+        super(agent, b_url, dbg)
+        @agent.follow_meta_refresh = true
+    end
+    
+    def GetEventsForDay()
+        # findform
+        form = search_form(@agent.page, "tskfil")
+        if (form == nil)
+            raise "Form Not Found. [tskfil]"
+        end
+        
+        d = Time.now()
+        
+        search_keys = Array.new()
+        search_keys.push(Array.new(["FMinYear",    d.year.to_s]))
+        search_keys.push(Array.new(["FMinMonth",   d.month.to_s]))
+        search_keys.push(Array.new(["FMinDay",     d.day.to_s]))
+        search_keys.push(Array.new(["FMaxYear",    d.year.to_s]))
+        search_keys.push(Array.new(["FMaxMonth",   d.month.to_s]))
+        search_keys.push(Array.new(["FMaxDay",     d.day.to_s]))
+        
+        set_options(form, search_keys)
+        
+        form.submit
+        
+        
+        # set key
+        # analyse table
+        # return Array
+    end
+end
+
 
