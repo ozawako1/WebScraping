@@ -87,3 +87,24 @@ def get_config(webapp, key)
     hash = JSON.parse(File.read(CONFIG))
     return hash[webapp][key]
 end
+
+def split_event_time(event_time)
+    
+    str = event_time.split("～")
+    arr = Array.new(2)
+    
+    if (str[0].index(":") != nil )
+        arr[0] = Time.strptime(str[0], "%Y年%m月%d日　%H:%M").to_i
+    else
+        arr[0] = Time.strptime(str[0], "%Y年%m月%d日").to_i
+    end
+    
+    if (str[1].index(":") != nil )
+        tmp = str[0].split("　")
+        arr[1] = Time.strptime(tmp[0] + str[1], "%Y年%m月%d日 %H:%M").to_i
+    else
+        arr[1] = Time.strptime(str[1], " %Y年%m月%d日").to_i
+    end
+    
+    return arr
+end

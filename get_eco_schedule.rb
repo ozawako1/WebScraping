@@ -1,9 +1,27 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 
+
+
 require "mechanize"
 require_relative "CWebApp"
 require_relative "util"
+
+def compress(arr)
+    arr.each { |line|
+        line.delete_at(9)
+        line.delete_at(8)
+        line.delete_at(7)
+        line.delete_at(6)
+        line.delete_at(5)
+        line.delete_at(4)
+        line.delete_at(3)
+        line.delete_at(1)
+        line.delete_at(0)
+    }
+    return arr
+end
+
 
 use_proxy = 0
 use_debug = 0
@@ -22,10 +40,6 @@ ARGV.each { |arg|
     end
 }
 
-if (is_already_ran == 1)
-    exit if use_debug == 0
-end
-
 agent = Mechanize.new
 agent.user_agent = "My User Agent"
 # agent.set_proxy("10.0.2.58", 8080) if use_proxy == 1
@@ -40,6 +54,12 @@ if site == nil
     exit
 end
 
+google = CWebAppGoogle.new("Eco2Calendar")
+if site == nil
+    puts("Google Init Error.")
+    exit
+end
+
 begin
     site.Login("/cgi-bin/Eco.cgi", "loginf", login_info)
     p site.GetPage() if use_dump == 1
@@ -47,30 +67,28 @@ begin
     site.Go("/cgi-bin/BSCD.cgi")
     p site.GetPage() if use_dump == 1
     
-    site.GetEventsForDay()
+    events = site.GetEventsForToday()
+    events.delete_at(0) # delete table header
+    
     p site.GetPage() if use_dump == 1
+    p events if use_debug == 1
     
+    events.each { | ev |
+        site.GetEventDetail(ev)
+    }
     
+    p compress(events)
     
-=begin
- 
-    site.Jump("PKTO318-1")
-    site.RunJS(AMOEBA_APPLY_SCRIPT)
+    google.Login()
     
-    site.Execute(AMOEBA_FORM, AMOEBA_APPLY_SCRIPT)
+    google.WriteFile(events)
     
-    site.Jump("PKTO318-2")
-    site.RunJS(AMOEBA_APPROVE_SCRIPT)
-    
-    site.Execute(AMOEBA_FORM, AMOEBA_APPROVE_SCRIPT)
-    
-    puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
-    
-    mark_ran()
-=end
 rescue => e
     p e
     p e.backtrace
     p Time.now
     
 end
+
+
+

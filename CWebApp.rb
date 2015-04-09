@@ -1,6 +1,12 @@
 require "mechanize"
 require "nokogiri"
+
+require "rubygems"
+require "google/api_client"
+require "google_drive"
+
 require_relative "util"
+require_relative "proc"
 
 HARVEST_FILTER_FORM = "expense_report_filter_form"
 HARVEST_FILTER_TYPE_DEPT = "departments"
@@ -9,6 +15,8 @@ AMOEBA_PAGE_LOGIN = "/"
 AMOEBA_APPLY_SCRIPT    = 1
 AMOEBA_APPROVE_SCRIPT  = 2
 AMOEBA_FORM = "formMain"
+
+GOOGLE_CALSYNC_FILE = "CalSync"
 
 OT_FORM     = 1
 OT_FIELD    = 2
@@ -111,7 +119,7 @@ class CWebApp
         end
         
         rows = doc.css(list_name)
-        if (rows == nil || rows.size == 0) then
+        if (rows == nil || rows.size == 0)
             raise "Data Table Row not found."
         end
         
@@ -357,7 +365,7 @@ class CWebAppEco < CWebApp
         @agent.follow_meta_refresh = true
     end
     
-    def GetEventsForDay()
+    def GetEventsForToday()
         # findform
         form = search_form(@agent.page, "tskfil")
         if (form == nil)
@@ -378,11 +386,86 @@ class CWebAppEco < CWebApp
         
         form.submit
         
+        return RetrieveList("table.DefT", method(:proc_split_table_to_array))
         
-        # set key
-        # analyse table
-        # return Array
+    end
+    
+    def GetEventDetail(event)
+        
+        Go("/cgi-bin/" + event[3])
+        
+        doc = Nokogiri::HTML.parse(@agent.page.body)
+        if (doc == nil)
+            raise "Document Body not found."
+        end
+        
+        rows = doc.css("td.DefT")
+        if (rows == nil || rows.size == 0)
+            raise "Data Table Row not found."
+        end
+        
+        detail = Array.new()
+        rows.each { |r|
+            detail.push(r.inner_text.strip)
+        }
+        
+        t = split_event_time(detail[5])
+        event.push(t[0])
+        event.push(t[1])
+        event.push(detail[12])
+        
     end
 end
+
+class CWebAppGoogle
+
+    attr_reader :app_name, :session
+    attr_accessor :debug
+
+    def initialize(app_name)
+        @app_name = app_name
+    end
+    
+    def Login()
+    
+        client = Google::APIClient.new(:application_name => @app_name)
+        auth = client.authorization
+        auth.client_id      = get_config(@app_name, "client_id")
+        auth.client_secret  = get_config(@app_name, "client_secret")
+        auth.refresh_token  = get_config(@app_name, "refresh_token")
+        auth.scope = "https://www.googleapis.com/auth/drive" + " " +
+                    "https://spreadsheets.google.com/feeds/"
+        #auth.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
+        #print("1. Open this page:\n%s\n\n" % auth.authorization_uri)
+        #print("2. Enter the authorization code shown in the page: ")
+        #auth.code = $stdin.gets.chomp
+        auth.fetch_access_token!
+        
+        # Creates a session.
+        @session = GoogleDrive.login_with_oauth(auth.access_token)
+    end
+    
+    def WriteFile(arr)
+        
+        csv = ""
+        arr.each { |line|
+            csv += line.join(",").gsub(/(\r\n)/, "+")
+            csv += "\r\n"
+        }
+        csv += "\r\n"
+        
+        Tempfile.open("tmp.csv") do |c_file|
+            c_file << csv
+            g_file = @session.file_by_title(GOOGLE_CALSYNC_FILE)
+            if (g_file != nil)
+                g_file.update_from_file(c_file)
+            else
+                @session.upload_from_file(c_file, GOOGLE_CALSYNC_FILE)
+            end
+        end
+    end
+    
+end
+
 
 

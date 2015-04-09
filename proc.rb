@@ -17,3 +17,35 @@ def proc_split_list_to_array(line, arr)
     
     arr.push(itm)
 end
+
+
+def proc_split_table_to_array(table, arr)
+    
+    chk = table.attribute("cellpadding")
+    if ( chk == nil || chk.value != "1" )
+        return
+    end
+    
+    line = table.css("tr")
+    if (line == nil || line.size == 0)
+        raise "Table has no contents."
+    end
+    
+    line.each { |r|
+        cols = r.css("td")
+        if (cols == nil || cols.size ==0)
+            raise "Line has no contents."
+        end
+
+        itm = Array.new
+        cols.each { |c|
+            itm.push(c.inner_text.strip)
+            href = c.css("a")
+            if (href != nil && href.size > 0)
+                itm.push(href.attribute("href").value)
+            end
+        }
+        arr.push(itm)
+    }
+
+end
