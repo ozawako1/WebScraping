@@ -47,6 +47,7 @@ agent.user_agent = "My User Agent"
 id = get_config("Eco","UserID")
 pd = get_config("Eco","password")
 login_info = Hash["UserID"=>id, "password"=>pd, "login"=>"1", "grsel"=>"-1"]
+path = get_config("Eco", "Url")
 
 site = CWebAppEco.new(agent, "http://192.168.103.149/LspEco", use_debug)
 if site == nil
@@ -83,6 +84,18 @@ begin
     
     google.WriteFile(events)
     
+    kick = CWebApp.new(agent, "https://docs.google.com/forms", 0)
+    if (kick ==nil)
+        puts("Google Init Error.")
+        exit
+    end
+    
+    kick.Go(path)
+    
+    kick.Execute("ss-form")
+    
+    #p kick.GetPage()
+
 rescue => e
     p e
     p e.backtrace

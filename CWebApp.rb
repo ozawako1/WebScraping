@@ -150,7 +150,7 @@ class CWebApp
             raise "Form Name is not given."
         end
         
-        f = @agent.page.form_with(:name => form_name)
+        f = search_form(@agent.page, form_name)
         if (f == nil)
             raise "Form Not Found. [" + form_name + "]"
         end
