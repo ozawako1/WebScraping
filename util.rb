@@ -171,7 +171,14 @@ def shrink_place(place)
         if (i > 0)
             ret = ret + " + "
         end
-        ret = ret + plist[places[i]]
+
+        shortname = plist[places[i]]
+        if (shortname != nil)
+            ret = ret + plist[places[i]]
+        else
+            ret = ret + places[i]
+        end
+
         i = i + 1
     end
     

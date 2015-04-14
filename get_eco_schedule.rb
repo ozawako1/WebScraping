@@ -68,8 +68,7 @@ begin
     site.Go("/cgi-bin/BSCD.cgi")
     p site.GetPage() if use_dump == 1
     
-    events = site.GetEventsForToday()
-    events.delete_at(0) # delete table header
+    events = site.GetEventsForWeek()
     
     p site.GetPage() if use_dump == 1
     p events if use_debug == 1

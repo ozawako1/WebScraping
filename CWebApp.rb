@@ -329,29 +329,48 @@ class CWebAppEco < CWebApp
         @agent.follow_meta_refresh = true
     end
     
-    def GetEventsForToday()
-        # findform
+    def GetEventsforDay(theday)
+        
         form = search_form(@agent.page, "tskfil")
         if (form == nil)
             raise "Form Not Found. [tskfil]"
         end
         
-        d = Time.now()
-        
         search_keys = Array.new()
-        search_keys.push(Array.new(["FMinYear",    d.year.to_s]))
-        search_keys.push(Array.new(["FMinMonth",   d.month.to_s]))
-        search_keys.push(Array.new(["FMinDay",     d.day.to_s]))
-        search_keys.push(Array.new(["FMaxYear",    d.year.to_s]))
-        search_keys.push(Array.new(["FMaxMonth",   d.month.to_s]))
-        search_keys.push(Array.new(["FMaxDay",     d.day.to_s]))
+        search_keys.push(Array.new(["FMinYear",    theday.year.to_s]))
+        search_keys.push(Array.new(["FMinMonth",   theday.month.to_s]))
+        search_keys.push(Array.new(["FMinDay",     theday.day.to_s]))
+        search_keys.push(Array.new(["FMaxYear",    theday.year.to_s]))
+        search_keys.push(Array.new(["FMaxMonth",   theday.month.to_s]))
+        search_keys.push(Array.new(["FMaxDay",     theday.day.to_s]))
         
         set_options(form, search_keys)
         
         form.submit
         
-        return RetrieveList("table.DefT", method(:proc_split_table_to_array))
+        arr = RetrieveList("table.DefT", method(:proc_split_table_to_array))
+        if (arr[1].length == 1)
+            # this means no data.
+            arr.delete_at(1)
+        end
+        arr.delete_at(0)
         
+        return arr
+    end
+    
+    def GetEventsForWeek()
+        
+        i = 0
+        d = Date.today()
+        
+        arr = Array.new()
+        while (i < 7)
+            arr.concat(GetEventsforDay(d + i))
+            i = i + 1
+        end
+        
+        return arr
+    
     end
     
     def GetEventDetail(event)
