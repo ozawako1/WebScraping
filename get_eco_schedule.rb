@@ -92,6 +92,8 @@ begin
     
     kick.Go(path)
     
+    kick.SetForm("ss-form", [["entry.1934995328","ss2cal"]])
+    
     kick.Execute("ss-form")
     
 rescue => e

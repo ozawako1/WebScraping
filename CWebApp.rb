@@ -143,6 +143,31 @@ class CWebApp
         
         return itm
     end
+    
+    def SetForm(form_name, keyvals)
+        if (form_name == nil || form_name == "")
+            raise "Form Name is not given."
+        end
+        
+        f = search_form(@agent.page, form_name)
+        if (f == nil)
+            raise "Form Not Found. [" + form_name + "]"
+        end
+        
+        keyvals.each { |kv|
+            fl = nil
+            fl = f.field_with(:name => kv[0])
+            if (fl == nil)
+                fls = f.add_field!(kv[0])
+                if (fls == nil)
+                    raise "Field could not be created. [" + kv[0].to_s + "]"
+                end
+                fl = fls[0]
+            end
+            fl.value = kv[1]
+        }
+    
+    end
 
     def Execute(form_name, script = 0)
         
