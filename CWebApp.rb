@@ -6,6 +6,7 @@ require "google/api_client"
 require "google_drive"
 
 require_relative "util"
+require_relative "webutil"
 require_relative "proc"
 
 HARVEST_FILTER_FORM = "expense_report_filter_form"
@@ -18,51 +19,6 @@ AMOEBA_FORM = "formMain"
 
 GOOGLE_CALSYNC_FILE = "CalSync"
 
-OT_FORM     = 1
-OT_FIELD    = 2
-OT_ANCHOR   = 3
-
-def set_options(form, keys)
-    
-    keys.each { |kv|
-        field = search_field(form, kv[0])
-        if (field == nil)
-            raise "Field Not Found. [" + kv[0] + "]"
-        end
-        field.option_with(:text => kv[1]).select
-    }
-    
-end
-
-def search_object(object_type, parent, name)
-    o1 = nil
-    o2 = nil
-    
-    case object_type
-    when OT_FORM
-        o1 = parent.form_with(:name => name)
-        o2 = parent.form_with(:id   => name)
-    when OT_FIELD
-        o1 = parent.field_with(:name => name)
-        o2 = parent.field_with(:id   => name)
-    when OT_ANCHOR
-        o1 = parent.link_with(:text => name)
-    end
-
-    return o1 ? o1 : o2
-end
-
-def search_form(page, f_name)
-    return search_object(OT_FORM, page, f_name)
-end
-
-def search_field(form, f_name)
-    return search_object(OT_FIELD, form, f_name)
-end
-
-def search_link(page, link_name)
-    return search_object(OT_ANCHOR, page, link_name)
-end
 
 class CWebApp
 	attr_reader :base_url, :agent
@@ -105,7 +61,6 @@ class CWebApp
     
     def Go(url)
         p ("Page :" + url) if @debug == 1
-        
         @agent.get(@base_url + url)
     end
 
@@ -204,25 +159,9 @@ class CWebApp
 private
     def pre_execute(form, script)
     end
-    def post_initialize()
-    end
 end
 
 class CWebAppHarvest < CWebApp
-    def post_jump(script)
-        
-        f = search_form(@agent.page, HARVEST_FILTER_FORM)
-        if (f == nil)
-            raise "Form Not Found. [" + HARVEST_FILTER_FORM + "]"
-        end
-        f.click_button
-        
-        nexturi = @agent.page.uri.to_s
-        nexturi = nexturi.gsub(/dates/, HARVEST_FILTER_TYPE_DEPT)
-        
-        @agent.get(nexturi)
-    end
-    
     def GetTotalHours()
         
         hours = self.GetItem("div.ds-amt")
@@ -467,10 +406,6 @@ class CWebAppGoogle
         auth.refresh_token  = get_config(@app_name, "refresh_token")
         auth.scope = "https://www.googleapis.com/auth/drive" + " " +
                     "https://spreadsheets.google.com/feeds/"
-        #auth.redirect_uri = "urn:ietf:wg:oauth:2.0:oob"
-        #print("1. Open this page:\n%s\n\n" % auth.authorization_uri)
-        #print("2. Enter the authorization code shown in the page: ")
-        #auth.code = $stdin.gets.chomp
         auth.fetch_access_token!
         
         # Creates a session.
