@@ -39,7 +39,9 @@ def proc_split_table_to_array(table, arr)
 
         itm = Array.new
         cols.each { |c|
-            itm.push(c.inner_text.strip)
+            val = c.inner_text.strip
+            val.gsub!(',', '+')
+            itm.push(val)
             href = c.css("a")
             if (href != nil && href.size > 0)
                 itm.push(href.attribute("href").value)

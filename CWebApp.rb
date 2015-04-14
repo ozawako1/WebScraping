@@ -392,7 +392,9 @@ class CWebAppEco < CWebApp
     
     def GetEventDetail(event)
         
-        Go("/cgi-bin/" + event[3])
+        url = event[3]
+        
+        Go("/cgi-bin/" + url)
         
         doc = Nokogiri::HTML.parse(@agent.page.body)
         if (doc == nil)
@@ -409,10 +411,15 @@ class CWebAppEco < CWebApp
             detail.push(r.inner_text.strip)
         }
         
+        p detail if @use_debug == 1
+        
         t = split_event_time(detail[5])
         event.push(t[0])
         event.push(t[1])
-        event.push(detail[12])
+        event.push(shrink_place(detail[12]))
+        s = url.index("&tskno=") + "&tskno=".length
+        e = url.index("&sday=")
+        event.push(url[s, e - s])
         
     end
 end

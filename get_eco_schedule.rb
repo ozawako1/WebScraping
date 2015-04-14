@@ -78,7 +78,7 @@ begin
         site.GetEventDetail(ev)
     }
     
-    p compress(events)
+    compress(events)
     
     google.Login()
     
@@ -94,8 +94,6 @@ begin
     
     kick.Execute("ss-form")
     
-    #p kick.GetPage()
-
 rescue => e
     p e
     p e.backtrace
