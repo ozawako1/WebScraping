@@ -433,7 +433,6 @@ class CWebAppGoogle
     end
     
     def WriteArray(arr)
-        
         csv = ""
         arr.each { |line|
             csv += line.join(",").gsub(/(\r\n)/, "+")
@@ -447,12 +446,9 @@ class CWebAppGoogle
         else
             @session.upload_from_string(csv, GOOGLE_CALSYNC_FILE, :content_type => "text/csv")
         end
-        
     end
 
-
     def WriteFile(fpath)
-        
         filename = File.basename(fpath)
         g_file = @session.file_by_title(filename)
         if (g_file != nil)
@@ -460,9 +456,16 @@ class CWebAppGoogle
         else
             @session.upload_from_file(fpath, filename, :content_type => "text/csv")
         end
-
     end
-    
+
+    def GetFile(src, dst)
+        srcfile = @session.file_by_title(src)
+        if (srcfile == nil)
+            raise "File (" + src + ") not found."
+        end
+        srcfile.download_to_file(dst)
+    end
+
 end
 
 
