@@ -18,6 +18,7 @@ AMOEBA_APPROVE_SCRIPT  = 2
 AMOEBA_FORM = "formMain"
 
 GOOGLE_CALSYNC_FILE = "CalSync"
+GOOGLE_HVALARM_FILE = "HarvestAlert"
 
 
 class CWebApp
@@ -431,7 +432,7 @@ class CWebAppGoogle
         @session = GoogleDrive.login_with_oauth(auth.access_token)
     end
     
-    def WriteFile(arr)
+    def WriteArray(arr)
         
         csv = ""
         arr.each { |line|
@@ -440,15 +441,26 @@ class CWebAppGoogle
         }
         csv += "\r\n"
         
-        Tempfile.open("tmp.csv") do |c_file|
-            c_file << csv
-            g_file = @session.file_by_title(GOOGLE_CALSYNC_FILE)
-            if (g_file != nil)
-                g_file.update_from_file(c_file)
-            else
-                @session.upload_from_file(c_file, GOOGLE_CALSYNC_FILE)
-            end
+        g_file = @session.file_by_title(GOOGLE_CALSYNC_FILE)
+        if (g_file != nil)
+            g_file.update_from_string(csv)
+        else
+            @session.upload_from_string(csv, GOOGLE_CALSYNC_FILE, :content_type => "text/csv")
         end
+        
+    end
+
+
+    def WriteFile(fpath)
+        
+        filename = File.basename(fpath)
+        g_file = @session.file_by_title(filename)
+        if (g_file != nil)
+            g_file.update_from_file(fpath)
+        else
+            @session.upload_from_file(fpath, filename, :content_type => "text/csv")
+        end
+
     end
     
 end

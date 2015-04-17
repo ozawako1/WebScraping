@@ -70,8 +70,12 @@ begin
         
     end
     
+    sorted = data.sort { |a, b|
+        a[3] <=> b[3]
+    }
+    
     # flush to file
-    flush_to_csv(data, csvpath + "/harvest_user_master.csv")
+    flush_to_csv(sorted, csvpath + "/harvest_user_master.csv")
     
 rescue => e
 

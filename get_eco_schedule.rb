@@ -1,8 +1,6 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 
-
-
 require "mechanize"
 require_relative "CWebApp"
 require_relative "util"
@@ -21,7 +19,6 @@ def compress(arr)
     }
     return arr
 end
-
 
 use_proxy = 0
 use_debug = 0
@@ -55,8 +52,8 @@ if site == nil
     exit
 end
 
-google = CWebAppGoogle.new("Eco2Calendar")
-if site == nil
+google = CWebAppGoogle.new("mygas")
+if google == nil
     puts("Google Init Error.")
     exit
 end
@@ -81,9 +78,9 @@ begin
     
     google.Login()
     
-    google.WriteFile(events)
+    google.WriteArray(events)
     
-    kick = CWebApp.new(agent, "https://docs.google.com/forms", 0)
+    kick = CWebApp.new(agent, "https://docs.google.com/forms", use_debug)
     if (kick ==nil)
         puts("Google Init Error.")
         exit

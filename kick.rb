@@ -11,9 +11,9 @@ if (kick ==nil)
     exit
 end
 
-kick.Go("/d/1GW_KDM9HzQ0vyFWY3dku2LaK8BZaio9KX1EFrm1C4Mc/viewform")
+kick.Go("/d/1zuj8DEgB15syssNb1izsIA3S4X8KBnduLTNTwVhYeCI/viewform")
 
-kick.SetForm("ss-form", [["entry.1934995328","ss2cal"]])
+kick.SetForm("ss-form", [["entry.132136151","ss2mail"]])
 
 kick.Execute("ss-form")
 
