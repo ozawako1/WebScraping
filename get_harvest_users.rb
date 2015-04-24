@@ -31,9 +31,6 @@ ARGV.each { |arg|
     end
 }
 
-agent = Mechanize.new
-agent.user_agent = "My User Agent"
-
 pageLogin = "/account/login"
 formLogin = "signin_form"
 id = get_config("Harvest", "ID")
@@ -42,7 +39,7 @@ hLogin = Hash["email"=>id, "user_password"=>pd]
 
 csvpath = "/Users/OzawaKoichi/Develop/output"
 
-site = CWebAppHarvest.new(agent, "https://motex.harvestapp.com")
+site = CWebAppHarvest.new("https://motex.harvestapp.com")
 if site == nil
 	puts("Init Error.")
     exit

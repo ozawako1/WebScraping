@@ -19,10 +19,6 @@ ARGV.each { |arg|
 	end
 }
 
-agent = Mechanize.new
-agent.user_agent = "My User Agent"
-agent.set_proxy("192.168.106.144", 8080) if use_proxy == 1
-
 cd = get_config("Amoeba","CompanyCode")
 id = get_config("Amoeba","ID")
 pd = get_config("Amoeba","Password")
@@ -30,11 +26,13 @@ pd = get_config("Amoeba","Password")
 login_info = Hash["CompanyCD"=>cd, "UserID"=>id, "Password"=>pd]
 csvpath = "/Users/OzawaKoichi/Develop/output"
 
-site = CWebAppAmoeba.new(agent, "http://10.149.0.183:9080/teams", use_debug)
+site = CWebAppAmoeba.new("http://10.149.0.183:9080/teams", use_debug)
 if site == nil
 	puts("Init Error.")
     exit
 end
+site.SetProxy("192.168.106.144", 8080) if use_proxy == 1
+
 
 begin
     site.Login(AMOEBA_PAGE_LOGIN, AMOEBA_FORM, login_info)

@@ -37,16 +37,13 @@ ARGV.each { |arg|
     end
 }
 
-agent = Mechanize.new
-agent.user_agent = "My User Agent"
-# agent.set_proxy("10.0.2.58", 8080) if use_proxy == 1
 
 id = get_config("Eco","UserID")
 pd = get_config("Eco","password")
 login_info = Hash["UserID"=>id, "password"=>pd, "login"=>"1", "grsel"=>"-1"]
 path = get_config("Eco", "Url")
 
-site = CWebAppEco.new(agent, "http://192.168.103.149/LspEco", use_debug)
+site = CWebAppEco.new("http://192.168.103.149/LspEco", use_debug)
 if site == nil
     puts("Init Error.")
     exit
@@ -80,18 +77,8 @@ begin
     
     google.WriteArray(events)
     
-    kick = CWebApp.new(agent, "https://docs.google.com/forms", use_debug)
-    if (kick ==nil)
-        puts("Google Init Error.")
-        exit
-    end
+    google.Kick_(path, "ss2cal")
     
-    kick.Go(path)
-    
-    kick.SetForm("ss-form", [["entry.1934995328","ss2cal"]])
-    
-    kick.Execute("ss-form")
-
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     
 rescue => e

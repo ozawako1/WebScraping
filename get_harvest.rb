@@ -7,8 +7,6 @@ require "nokogiri"
 require_relative "CWebApp"
 require_relative "util"
 
-agent = Mechanize.new
-agent.user_agent = "My User Agent"
 
 pageLogin = "/account/login"
 formLogin = "signin_form"
@@ -28,7 +26,7 @@ yesterday = get_day_number_of_year(Date.today() - 1)
 thisyear = Time.now.year
 
 
-site = CWebAppHarvest.new(agent, "https://motex.harvestapp.com")
+site = CWebAppHarvest.new("https://motex.harvestapp.com")
 if site == nil
 	puts("Init Error.")
 end

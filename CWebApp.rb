@@ -25,11 +25,17 @@ class CWebApp
 	attr_reader :base_url, :agent
     attr_accessor :debug
 
-	def initialize(agent, b_url, dbg = 0)
-		@agent	= agent
+	def initialize(b_url, dbg = 0)
+		@agent	= Mechanize.new
+        @agent.user_agent = "CWebApp/1.0 (Mechanize; Nokogiri)"
         @base_url	= b_url
 		@debug = dbg
 	end
+    
+    def SetProxy(proxy_ipaddr, proxy_port)
+        @agent.set_proxy(proxy_ipaddr, proxy_port)
+    end
+    
 
 	def Login(page_login, f_login, info_login)
         
@@ -98,6 +104,25 @@ class CWebApp
         end
         
         return itm
+    end
+    
+    def SetFormFirstField(form_name, val)
+        if (form_name == nil || form_name == "")
+            raise "Form Name is not given."
+        end
+        
+        f = search_form(@agent.page, form_name)
+        if (f == nil)
+            raise "Form Not Found. [" + form_name + "]"
+        end
+        
+        fls = f.fields
+        if (fls == nil)
+            raise "No Field exist."
+        end
+        
+        fls[0].value = val
+        
     end
     
     def SetForm(form_name, keyvals)
@@ -325,8 +350,8 @@ end
 
 class CWebAppEco < CWebApp
     
-    def initialize(agent, b_url, dbg = 0)
-        super(agent, b_url, dbg)
+    def initialize(b_url, dbg = 0)
+        super(b_url, dbg)
         @agent.follow_meta_refresh = true
     end
     
@@ -408,12 +433,12 @@ class CWebAppEco < CWebApp
     end
 end
 
-class CWebAppGoogle
+class CWebAppGoogle < CWebApp
 
     attr_reader :app_name, :session
-    attr_accessor :debug
 
-    def initialize(app_name)
+    def initialize(app_name, dbg = 0)
+        super("https://docs.google.com/forms", dbg)
         @app_name = app_name
     end
     
@@ -464,6 +489,12 @@ class CWebAppGoogle
             raise "File (" + src + ") not found."
         end
         srcfile.download_to_file(dst)
+    end
+    
+    def Kick_(path, ball)
+        Go(path)
+        SetFormFirstField("ss-form", ball)
+        Execute("ss-form")
     end
 
 end
