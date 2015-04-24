@@ -91,11 +91,15 @@ begin
     kick.SetForm("ss-form", [["entry.1934995328","ss2cal"]])
     
     kick.Execute("ss-form")
+
+    puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     
 rescue => e
     p e
     p e.backtrace
     p Time.now
+
+	puts("Error." + e.message)
     
 end
 
