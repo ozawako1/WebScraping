@@ -487,6 +487,8 @@ class CWebAppGoogle < CWebApp
         end
     end
 
+    # UNDER CONSTRUCTION
+    # this method does nothing with script files
     def GetFile(src, dst)
         srcfile = @session.file_by_title(src)
         if (srcfile == nil)
