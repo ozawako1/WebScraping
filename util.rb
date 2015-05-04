@@ -88,6 +88,17 @@ def get_config(webapp, key)
     return hash[webapp][key]
 end
 
+def set_config(webapp, key, value)
+    
+    hash = JSON.parse(File.read(CONFIG))
+    hash[webapp][key] = value
+    
+    File.open(CONFIG, "w") do |f|
+        f.write(JSON.pretty_generate(hash))
+    end
+end
+
+
 def split_event_time(event_time)
     
     str = event_time.split("～")

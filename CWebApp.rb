@@ -11,6 +11,9 @@ require_relative "proc"
 
 HARVEST_FILTER_FORM = "expense_report_filter_form"
 HARVEST_FILTER_TYPE_DEPT = "departments"
+HARVEST_PAGE_LOGIN = "/account/login"
+HARVEST_FORM_LOGIN = "signin_form"
+
 
 AMOEBA_PAGE_LOGIN = "/"
 AMOEBA_APPLY_SCRIPT    = 1
@@ -19,6 +22,7 @@ AMOEBA_FORM = "formMain"
 
 GOOGLE_CALSYNC_FILE = "CalSync"
 GOOGLE_HVALARM_FILE = "HarvestAlert"
+
 
 
 class CWebApp
