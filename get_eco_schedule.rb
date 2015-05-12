@@ -78,7 +78,6 @@ begin
     google.WriteArray(events)
     
     google.Kick_(path, "ss2cal")
-	p google.GetPage() if use_dump == 1
     
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     
