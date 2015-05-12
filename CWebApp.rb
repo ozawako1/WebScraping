@@ -71,7 +71,7 @@ class CWebApp
 	end
     
     def Go(url)
-        p ("Page :" + url) if @debug == 1
+        p ("Page :" + @base_url + url) if @debug == 1
         @agent.get(@base_url + url)
     end
 

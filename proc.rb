@@ -51,3 +51,20 @@ def proc_split_table_to_array(table, arr)
     }
 
 end
+
+def proc_split_shoptable_to_array(table, arr)
+
+    line = table.css("td.info-txt")
+    if (line == nil || line.size == 0)
+        raise "Table has no contents."
+    end
+    
+    line.each { |r|
+        
+        name = r.css("p").inner_text
+        addr = r.css("li.address").inner_text
+   
+        arr.push(Array.new([name, addr]))
+    }
+
+end
