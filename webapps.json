@@ -1,12 +1,35 @@
 {
+	"COMMON":{
+		"CSVPath"	: "/Users/OzawaKoichi/Develop/output/",
+		"UserHours"	: "user_hours.csv"
+	},
 	"Harvest":{
-		"ID"		: "xxx",
-		"Password"	: "xxx"
+		"ID"		: "...",
+		"Password"	: "...",
+		"UserMaster": "harvest_user_master.csv"
+	},
+	"Eco":{
+		"UserID"	: "...",
+		"password"	: "...",
+		"Url"		: "..."
 	},
 	"Amoeba":{
-		"CompanyCode"	: "xxx",
-		"ID"	: "xxx",
-		"Password"	: "xxx"
+		"CompanyCode"	: "...",
+		"ID"	: "...",
+		"Password"	: "..."
+	},
+	"mygas":{
+		"auth_uri":"https://accounts.google.com/o/oauth2/auth",
+		"client_secret":"...",
+		"token_uri":"https://accounts.google.com/o/oauth2/token",
+		"client_email":"",
+		"redirect_uris":["...","..."],
+		"client_x509_cert_url":"",
+		"client_id":"...",
+		"auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
+		"refresh_token":"..."
 	}
+
+
 }
 
