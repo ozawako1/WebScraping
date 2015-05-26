@@ -40,12 +40,10 @@ begin
 
     site.Jump("PKTO318-1")
     site.RunJS(AMOEBA_APPLY_SCRIPT)
-    
     site.Execute(AMOEBA_FORM, AMOEBA_APPLY_SCRIPT)
     
     site.Jump("PKTO318-2")
     site.RunJS(AMOEBA_APPROVE_SCRIPT)
-    
     site.Execute(AMOEBA_FORM, AMOEBA_APPROVE_SCRIPT)
     
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
