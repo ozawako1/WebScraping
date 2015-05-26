@@ -18,6 +18,8 @@ HARVEST_FORM_LOGIN = "signin_form"
 AMOEBA_PAGE_LOGIN = "/"
 AMOEBA_APPLY_SCRIPT    = 1
 AMOEBA_APPROVE_SCRIPT  = 2
+AMOEBA_APPLY_SCRIPT_SEARCH    = 3
+AMOEBA_APPROVE_SCRIPT_SEARCH  = 4
 AMOEBA_FORM = "formMain"
 
 GOOGLE_CALSYNC_FILE = "CalSync"
@@ -154,7 +156,7 @@ class CWebApp
     
     end
 
-    def Execute(form_name, script = 0)
+    def Execute(form_name, button_name = nil, script = 0)
         
         if (form_name == nil || form_name == "")
             raise "Form Name is not given."
@@ -171,7 +173,16 @@ class CWebApp
             f.encoding = "Shift_JIS"
         end
         
-        f.submit
+        if (button_name == nil) 
+            f.submit
+        else
+            btn = f.button_with(:value => button_name)
+            if (btn == nil)
+                raise "Button [" + button_name + "] not found."
+            end
+            f.click_button(btn)           
+        end
+        
     end
     
     def FollowLink(linkName)
@@ -205,12 +216,20 @@ end
 class CWebAppAmoeba < CWebApp
     
     def Jump(menu_id)
-        path = sprintf("/Main?actionbean=Shortcut&menuID=%s&referer=%%2Fshare%%2Fmenu.jsp&isForwardManagement=1&forward_mng_menu_id=%s", menu_id, menu_id)
-        p ("Page : " + path) if @debug == 1
-        @agent.get(@base_url + path)
+        jump_url = "/Main?actionbean=Shortcut&menuID=%s&referer=%%2Fshare%%2Fmenu.jsp" +
+                   "&isForwardManagement=1&forward_mng_menu_id=%s"
+        self.Go(jump_url%[menu_id, menu_id])
     end
     
-    def GetWorkHours()
+    def GetWorkHoursByEmpCode(emp_code)
+        work_hours_page = "/Main?referer=/teams/KTO/PKTO331%%2Fsearchlist.jsp" +
+                          "&prepage=/sharemenu.jsp&menuID=PKTO331&forward=searchlist.jsp" +
+                          "&service=jp.co.kccs.greenearth.erp.kto.pkto331.PersonalCalendarService" +
+                          "&actionbean=GetList&mode=search&listsize=-1&no_header=" +
+                          "&Objective_DT_P=%d/%02d&Time_CL_1=1&Stuff_No_0=%s&Name="
+        
+        self.Go(work_hours_page%[Time.now.year, Time.now.month, emp_code])
+    
         itm = self.GetItem("#TTL_Fixed_Time_lbl")
         hours = itm[1].text.strip
         
@@ -222,71 +241,6 @@ class CWebAppAmoeba < CWebApp
         return hours
     end
     
-    def RunJS(script)
-        
-        form = search_form(@agent.page, AMOEBA_FORM)
-        if (form == nil)
-            raise "Form Not Found. [" + AMOEBA_FORM + "]"
-        end
-
-        key_val = Hash.new
-        target_date = getlastworkday()
-        
-        case script
-        when AMOEBA_APPLY_SCRIPT
-            key_val = {
-                "mode"          => "search",
-                "forward"       => "editlist.jsp",
-                "actionbean"    => "GetList",
-                "service"       => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
-                "Target_DT_Temp"    => target_date,
-                "Target_DT_KEY"     => target_date,
-                "ORG_CD_KEY"        => form.Belong_ORG_CD_1,
-                "ORG_NA_KEY"        => form.ORG_NA,
-                "Stuff_No_CONDITION"    => form.Stuff_No_2,
-                "Name_CONDITION"    => form.DispName,
-                "ORG_CD_CONDITION"  => form.Belong_ORG_CD_1,
-                "ORG_NA_CONDITION"  => form.ORG_NA
-            }
-        when AMOEBA_APPROVE_SCRIPT
-            key_val = {
-                "mode"          => "search",
-                "forward"       => "editlist.jsp",
-                "actionbean"    => "GetList",
-                "service"       => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
-                "Target_DT_Temp"    => target_date,
-                "Target_DT_KEY"     => target_date,
-                "ORG_CD_KEY"        => form.Belong_ORG_CD_1,
-                "ORG_NA_KEY"        => form.ORG_NA,
-                "Stuff_No_CONDITION"    => form.Stuff_No_2,
-                "Name_CONDITION"    => form.DispName,
-                "ORG_CD_CONDITION"  => form.Belong_ORG_CD_1,
-                "ORG_NA_CONDITION"  => form.ORG_NA
-            }
-        end
-        
-        key_val.keys.each { |k|
-            fl = nil
-            fl = form.field_with(:name => k)
-            if (fl == nil)
-                fls = form.add_field!(k)
-                if (fls == nil)
-                    raise "Field could not be created. [" + k.to_s + "]"
-                end
-                fl = fls[0]
-            end
-            fl.value = key_val[k]
-        }
- 
- 
-        if (form.encoding == "Cp943C")
-            form.encoding = "Shift_JIS"
-        end
-        
-        form.click_button
-
-    end
-    
     def pre_execute(form, script)
         
         key_val = Hash.new
@@ -295,37 +249,68 @@ class CWebAppAmoeba < CWebApp
         case script
         when AMOEBA_APPLY_SCRIPT
             key_val = {
-                "Decide_chk"    => "on",
-                "Decide"        => "1",
-                "forward"       => "editlist.jsp",
-                "actionbean"    => "SaveList",
-                "mode"          => "appli",
-                "service"       => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
-                "Target_DT_Temp"    => target_date,
-                "ORG_CD_KEY"    => form.Belong_ORG_CD_1,
+                "mode"                  => "appli",
+                "forward"               => "editlist.jsp",
+                "actionbean"            => "SaveList",
+                "service"               => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
+                "Target_DT_Temp"        => target_date,
+#               "Target_DT_Key"         => 
+                "ORG_CD_KEY"            => form.Belong_ORG_CD_1,
+#               "ORG_NA_KEY"            => 
+                "ORG_CD_CONDITION"      => form.Belong_ORG_CD_1,
+                "ORG_NA_CONDITION"      => form.ORG_NA,
                 "Stuff_No_CONDITION"    => form.Stuff_No_2,
-                "ORG_CD_CONDITION"  => form.Belong_ORG_CD_1,
-                "ORG_NA_CONDITION"  => form.ORG_NA
+                "Decide_chk"            => "on",
+                "Decide"                => "1"
             }
         when AMOEBA_APPROVE_SCRIPT
             key_val = {
-                "forward"       => "editlist.jsp",
-                "actionbean"    => "SaveList",
-                "mode"          => "approval",
-                "service"       => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
-                "Target_DT_Temp"    => target_date,
-                "Target_DT_KEY" => target_date,
-                "ORG_CD_KEY"    => form.Belong_ORG_CD_1,
-                "ORG_NA_KEY"    => form.ORG_NA,
+                "mode"                  => "approval",
+                "forward"               => "editlist.jsp",
+                "actionbean"            => "SaveList",
+                "service"               => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
+                "Target_DT_Temp"        => target_date,
+                "Target_DT_KEY"         => target_date,
+                "ORG_CD_KEY"            => form.Belong_ORG_CD_1,
+                "ORG_NA_KEY"            => form.ORG_NA,
+                "ORG_CD_CONDITION"      => form.Belong_ORG_CD_1,
+                "ORG_NA_CONDITION"      => form.ORG_NA,
                 "Stuff_No_CONDITION"    => form.Stuff_No_2,
-                "Name_CONDITION"    => form.DispName,
-                "ORG_CD_CONDITION"  => form.Belong_ORG_CD_1,
-                "ORG_NA_CONDITION"  => form.ORG_NA
+                "Name_CONDITION"        => form.DispName
+            }
+        when AMOEBA_APPLY_SCRIPT_SEARCH
+            key_val = {
+                "mode"                  => "search",
+                "forward"               => "editlist.jsp",
+                "actionbean"            => "GetList",
+                "service"               => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
+                "Target_DT_Temp"        => target_date,
+                "Target_DT_KEY"         => target_date,
+                "ORG_CD_KEY"            => form.Belong_ORG_CD_1,
+                "ORG_NA_KEY"            => form.ORG_NA,
+                "ORG_CD_CONDITION"      => form.Belong_ORG_CD_1,
+                "ORG_NA_CONDITION"      => form.ORG_NA,
+                "Stuff_No_CONDITION"    => form.Stuff_No_2,
+                "Name_CONDITION"        => form.DispName
+            }
+        when AMOEBA_APPROVE_SCRIPT_SEARCH
+            key_val = {
+                "mode"                  => "search",
+                "forward"               => "editlist.jsp",
+                "actionbean"            => "GetList",
+                "service"               => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
+                "Target_DT_Temp"        => target_date,
+                "Target_DT_KEY"         => target_date,
+                "ORG_CD_KEY"            => form.Belong_ORG_CD_1,
+                "ORG_NA_KEY"            => form.ORG_NA,
+                "ORG_CD_CONDITION"      => form.Belong_ORG_CD_1,
+                "ORG_NA_CONDITION"      => form.ORG_NA,
+                "Stuff_No_CONDITION"    => form.Stuff_No_2,
+                "Name_CONDITION"        => form.DispName
             }
         else
             raise "Unknown script type."
         end
-        
         
         key_val.keys.each { |k|
             fl = nil

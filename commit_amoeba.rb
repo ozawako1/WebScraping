@@ -39,12 +39,12 @@ begin
     site.Login(AMOEBA_PAGE_LOGIN, AMOEBA_FORM, login_info)
 
     site.Jump("PKTO318-1")
-    site.RunJS(AMOEBA_APPLY_SCRIPT)
-    site.Execute(AMOEBA_FORM, AMOEBA_APPLY_SCRIPT)
+    site.Execute(AMOEBA_FORM, "検索(F)", AMOEBA_APPLY_SCRIPT_SEARCH)
+    site.Execute(AMOEBA_FORM, nil, AMOEBA_APPLY_SCRIPT)
     
     site.Jump("PKTO318-2")
-    site.RunJS(AMOEBA_APPROVE_SCRIPT)
-    site.Execute(AMOEBA_FORM, AMOEBA_APPROVE_SCRIPT)
+    site.Execute(AMOEBA_FORM, "検索(F)", AMOEBA_APPROVE_SCRIPT_SEARCH)
+    site.Execute(AMOEBA_FORM, nil, AMOEBA_APPROVE_SCRIPT)
     
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     
