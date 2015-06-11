@@ -56,28 +56,37 @@ if google == nil
 end
 
 begin
+    puts("Log in Eco ...")
     site.Login("/cgi-bin/Eco.cgi", "loginf", login_info)
     p site.GetPage() if use_dump == 1
+    puts("Log in Eco done.")
     
+    puts("Getting Schedule from Eco ...")
     site.Go("/cgi-bin/BSCD.cgi")
     p site.GetPage() if use_dump == 1
-    
     events = site.GetEventsForWeek()
+    puts("Getting Schedule from Eco done")
     
+    puts("Getting Schedule detail from Eco ...")
     p site.GetPage() if use_dump == 1
-    p events if use_debug == 1
-    
+    p events if use_debug == 1    
     events.each { | ev |
         site.GetEventDetail(ev)
     }
-    
     compress(events)
+    puts("Getting Schedule detail from Eco done")
     
+    puts("Log in Google ...")
     google.Login()
+    puts("Log in Google done")
     
+    puts("Upload schedule to Google ...")
     google.WriteArray(events)
+    puts("Upload schedule to Google done")
     
+    puts("Update Google Calendar ...")
     google.Kick_(path, "ss2cal")
+    puts("Update Google Calendar done")
     
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     
