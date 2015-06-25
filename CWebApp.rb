@@ -25,6 +25,8 @@ AMOEBA_FORM = "formMain"
 GOOGLE_CALSYNC_FILE = "CalSync"
 GOOGLE_HVALARM_FILE = "HarvestAlert"
 
+GAROON_PAGE_LOGIN = "login"
+GAROON_FORM_LOGIN = "login-form-slash"
 
 
 class CWebApp
@@ -388,6 +390,21 @@ class CWebAppEco < CWebApp
     
     end
     
+    def GetEventsForMonth()
+        
+        i = 0
+        d = Date.today()
+        
+        arr = Array.new()
+        while (i < 31)
+            arr.concat(GetEventsforDay(d + i))
+            i = i + 1
+        end
+        
+        return arr
+    
+    end
+    
     def GetEventDetail(event)
         
         url = event[3]
@@ -409,11 +426,14 @@ class CWebAppEco < CWebApp
             detail.push(r.inner_text.strip)
         }
         
-        p detail if @use_debug == 1
+        p detail if @debug == 1
         
         t = split_event_time(detail[5])
         event.push(t[0])
         event.push(t[1])
+        
+        p t if @debug == 1
+        
         event.push(shrink_place(detail[12]))
         s = url.index("&tskno=") + "&tskno=".length
         e = url.index("&sday=")
@@ -490,5 +510,17 @@ class CWebAppGoogle < CWebApp
 
 end
 
+
+class CWebAppGaroon < CWebApp
+    
+    def initialize(b_url, dbg = 0)
+        super(b_url, dbg)
+    end
+    
+    def CreateEvent(event_info)
+        
+    end
+    
+end
 
 

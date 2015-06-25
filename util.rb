@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
 
 require "date"
 require "csv"
@@ -101,7 +103,7 @@ end
 
 def split_event_time(event_time)
     
-    str = event_time.split("～")
+    str = event_time.split("〜")
     arr = Array.new(2)
     
     if (str[0].index(":") != nil )
