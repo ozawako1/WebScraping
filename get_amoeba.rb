@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
-require_relative "CWebApp"
 
+require_relative "CWebApp"
 
 def get_amoeba_hours(amoeba_webapp, user_hours_file)
     

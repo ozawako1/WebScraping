@@ -25,6 +25,7 @@ use_debug = 0
 use_dump  = 0
 get_month = 0
 get_today = 0
+get_past  = 0
 
 ARGV.each { |arg|
     case arg
@@ -38,6 +39,8 @@ ARGV.each { |arg|
             get_month = 1
         when "TODAY"
             get_today = 1
+        when "PAST"
+            get_past = 1
         else
         puts("undefined arg. [" + arg + "]")
     end
@@ -74,6 +77,8 @@ begin
         events = site.GetEventsForMonth()
     elsif get_today == 1 then
         events = site.GetEventsforDay(Date.today())
+    elsif get_past == 1 then
+        events = site.GetPastEvents()
     else
         events = site.GetEventsForWeek()
     end
@@ -96,10 +101,12 @@ begin
     google.WriteArray(events)
     puts("Upload schedule to Google done")
     
-    puts("Update Google Calendar ...")
-    google.Kick_(path, "ss2cal")
-    puts("Update Google Calendar done")
-    
+    if get_past == 0 then
+        puts("Update Google Calendar ...")
+        google.Kick_(path, "ss2cal") 
+        puts("Update Google Calendar done")
+    end
+        
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     
 rescue => e

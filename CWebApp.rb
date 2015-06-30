@@ -30,7 +30,7 @@ GAROON_FORM_LOGIN = "login-form-slash"
 
 
 class CWebApp
-	attr_reader :base_url, :agent
+	attr_reader :base_url, :agent, :encoding
     attr_accessor :debug
 
 	def initialize(b_url, dbg = 0)
@@ -38,6 +38,7 @@ class CWebApp
         @agent.user_agent = "CWebApp/1.0 (Mechanize; Nokogiri)"
         @base_url	= b_url
 		@debug = dbg
+        @encoding = nil
 	end
     
     def SetProxy(proxy_ipaddr, proxy_port)
@@ -83,7 +84,7 @@ class CWebApp
         
         summary = Array.new
         
-        doc = Nokogiri::HTML.parse(@agent.page.body)
+        doc = Nokogiri::HTML.parse(@agent.page.body, nil, @encoding ? @encoding : @agent.page.encoding)
         if (doc == nil)
             raise "Document Body not found."
         end
@@ -101,14 +102,14 @@ class CWebApp
     end
 
     def GetItem(css)
-        doc = Nokogiri::HTML.parse(@agent.page.body)
+        doc = Nokogiri::HTML.parse(@agent.page.body, nil, @encoding ? @encoding : @agent.page.encoding)
         if (doc == nil)
             raise "Document Body not found."
         end
         
         itm = doc.css(css)
         if (itm == nil || itm.size == 0) then
-            raise "Data not found."
+            raise "Data not found. (" + css + ")"
         end
         
         return itm
@@ -216,6 +217,11 @@ class CWebAppHarvest < CWebApp
 end
 
 class CWebAppAmoeba < CWebApp
+
+    def initialize(b_url, dbg = 0)
+        super(b_url, dbg)
+        @encoding = "CP932"
+    end
     
     def Jump(menu_id)
         jump_url = "/Main?actionbean=Shortcut&menuID=%s&referer=%%2Fshare%%2Fmenu.jsp" +
@@ -391,27 +397,35 @@ class CWebAppEco < CWebApp
     end
     
     def GetEventsForMonth()
-        
         i = 0
         d = Date.today()
-        
         arr = Array.new()
         while (i < 31)
             arr.concat(GetEventsforDay(d + i))
             i = i + 1
         end
-        
         return arr
-    
     end
     
+    def GetPastEvents()
+        i = 0
+        d = Date.today()
+        arr = Array.new()
+        while (i < 90)
+            arr.concat(GetEventsforDay(d - i))
+            i = i + 1
+        end
+        return arr
+    end
+
+
     def GetEventDetail(event)
         
         url = event[3]
         
         Go("/cgi-bin/" + url)
         
-        doc = Nokogiri::HTML.parse(@agent.page.body)
+        doc = Nokogiri::HTML.parse(@agent.page.body, nil, @encoding ? @encoding : @agent.page.encoding)
         if (doc == nil)
             raise "Document Body not found."
         end
@@ -428,9 +442,14 @@ class CWebAppEco < CWebApp
         
         p detail if @debug == 1
         
-        t = split_event_time(detail[5])
-        event.push(t[0])
-        event.push(t[1])
+        if (detail[5] != nil) then
+            t = split_event_time(detail[5])
+            event.push(t[0])
+            event.push(t[1])
+        else
+            event.push("")
+            event.push("")
+        end
         
         p t if @debug == 1
         
