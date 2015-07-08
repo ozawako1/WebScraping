@@ -24,8 +24,6 @@ use_proxy = 0
 use_debug = 0
 use_dump  = 0
 get_month = 0
-get_today = 0
-get_past  = 0
 
 ARGV.each { |arg|
     case arg
@@ -37,10 +35,6 @@ ARGV.each { |arg|
             use_dump = 1
         when "MONTH"
             get_month = 1
-        when "TODAY"
-            get_today = 1
-        when "PAST"
-            get_past = 1
         else
         puts("undefined arg. [" + arg + "]")
     end
@@ -71,14 +65,9 @@ begin
     puts("Log in Eco done.")
     
     puts("Getting Schedule from Eco ...")
-    site.Go("/cgi-bin/BSCD.cgi")
     p site.GetPage() if use_dump == 1
     if get_month == 1 then
         events = site.GetEventsForMonth()
-    elsif get_today == 1 then
-        events = site.GetEventsforDay(Date.today())
-    elsif get_past == 1 then
-        events = site.GetPastEvents()
     else
         events = site.GetEventsForWeek()
     end

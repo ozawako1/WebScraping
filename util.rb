@@ -100,30 +100,61 @@ def set_config(webapp, key, value)
     end
 end
 
+MODE_NORMAL = 0
+MODE_GAROON = 1
 
-def split_event_time(event_time)
+
+def split_event_time(event_time, mode = MODE_NORMAL)
     
     str = event_time.split("〜")
-    arr = Array.new(2)
+    arr = Array.new(4)
     
     if (str[0].index(":") != nil )
-        arr[0] = Time.strptime(str[0], "%Y年%m月%d日　%H:%M").to_i
+        arr[0] = Time.strptime(str[0], "%Y年%m月%d日　%H:%M")
     else
-        arr[0] = Time.strptime(str[0], "%Y年%m月%d日").to_i
+        arr[0] = Time.strptime(str[0], "%Y年%m月%d日")
     end
     
 	if (str[1] != nil) 
     	if (str[1].index(":") != nil )
         	tmp = str[0].split("　")
-        	arr[1] = Time.strptime(tmp[0] + str[1], "%Y年%m月%d日 %H:%M").to_i
+        	arr[1] = Time.strptime(tmp[0] + str[1], "%Y年%m月%d日 %H:%M")
     	else
-			arr[1] = Time.strptime(str[1], " %Y年%m月%d日").to_i
+			arr[1] = Time.strptime(str[1], " %Y年%m月%d日")
     	end
 	else
-		str[1] = ""
+        # 開始日と同じに
+		arr[1] = arr[0]
 	end
     
+    
+    if (mode == MODE_NORMAL) then
+        # UNIXTIME
+        arr[0] = arr[0].to_i
+        arr[1] = arr[1].to_i
+    elsif (mode == MODE_GAROON) then
+        # Garoon CSV string
+        arr[3] = arr[1].strftime("%H:%M:%S")
+        arr[2] = arr[0].strftime("%H:%M:%S")
+        arr[1] = arr[1].strftime("%Y/%m/%d")
+        arr[0] = arr[0].strftime("%Y/%m/%d")
+    end    
+
+    
     return arr
+end
+
+def is_empty(obj)
+    
+    ret = false
+    
+    if (obj == nil)
+        ret = true
+    elsif (obj.length == 0)
+        ret = true
+    end
+    
+    return ret
 end
 
 def shrink_place(place)

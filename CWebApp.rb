@@ -22,30 +22,61 @@ AMOEBA_APPLY_SCRIPT_SEARCH    = 3
 AMOEBA_APPROVE_SCRIPT_SEARCH  = 4
 AMOEBA_FORM = "formMain"
 
+GARCSV_STARTDATE    = 0
+GARCSV_STARTTIME    = 1
+GARCSV_STOPDATE = 2
+GARCSV_STOPTIME = 3
+GARCSV_SCHEDULE_MENU    = 4
+GARCSV_SCHEDUEL_TITLE   = 5
+GARCSV_SCHEDULE_MEMO    = 6
+
+ECOLIST_DATETIME = 3
+
+ECOCSV_REG_INFO = 0
+ECOCSV_UPD_INFO = 1
+ECOCSV_ORDER_USER   = 2
+ECOCSV_TITLE    = 3
+ECOCSV_PRIORITY = 4
+ECOCSV_SCHEDULE = 5
+ECOCSV_EXECUTE  = 6
+ECOCSV_OPEN_TO  = 7
+ECOCSV_SCHEDULE_MEMO    = 8
+ECOCSV_EXEC_MEM0    = 9
+ECOCSV_USERS    = 10
+ECOCSV_PLACE    = 11
+ECOCSV_INFRA    = 12
+ECOCSV_PROJECT  = 13
+ECOCSV_TARGET   = 14
+ECOCSV_PREPARE  = 15
+ECOCSV_FINISH   = 16
+ECOCSV_PROCESS  = 17
+
 GOOGLE_CALSYNC_FILE = "CalSync"
 GOOGLE_HVALARM_FILE = "HarvestAlert"
 
 GAROON_PAGE_LOGIN = "login"
 GAROON_FORM_LOGIN = "login-form-slash"
 
+ECO_SEARCH_PAGE = "/cgi-bin/BSCD.cgi"
+
 
 class CWebApp
-	attr_reader :base_url, :agent, :encoding
+	attr_reader :base_url, :agent, :encoding, :doc
     attr_accessor :debug
 
 	def initialize(b_url, dbg = 0)
 		@agent	= Mechanize.new
         @agent.user_agent = "CWebApp/1.0 (Mechanize; Nokogiri)"
         @base_url	= b_url
-		@debug = dbg
-        @encoding = nil
+		@debug    = dbg
+        @encoding   = nil
+        @doc    = nil
 	end
     
     def SetProxy(proxy_ipaddr, proxy_port)
         @agent.set_proxy(proxy_ipaddr, proxy_port)
     end
     
-
 	def Login(page_login, f_login, info_login)
         
 		l_page = @base_url + page_login
@@ -75,16 +106,18 @@ class CWebApp
 		f.submit
 	end
     
+    
     def Go(url)
         p ("Page :" + @base_url + url) if @debug == 1
         @agent.get(@base_url + url)
+        @doc = nil
     end
 
     def RetrieveList(list_name, func)
         
-        summary = Array.new
+        summary = Array.new()
         
-        doc = Nokogiri::HTML.parse(@agent.page.body, nil, @encoding ? @encoding : @agent.page.encoding)
+        doc = ParsePage()
         if (doc == nil)
             raise "Document Body not found."
         end
@@ -100,9 +133,16 @@ class CWebApp
         
         return summary
     end
-
+    
+    def ParsePage()
+        # if @doc == nil then
+            @doc = Nokogiri::HTML.parse(@agent.page.body, nil, @encoding ? @encoding : @agent.page.encoding)
+        # end
+        return @doc
+    end
+    
     def GetItem(css)
-        doc = Nokogiri::HTML.parse(@agent.page.body, nil, @encoding ? @encoding : @agent.page.encoding)
+        doc = ParsePage() 
         if (doc == nil)
             raise "Document Body not found."
         end
@@ -113,6 +153,44 @@ class CWebApp
         end
         
         return itm
+    end
+    
+    def Table2Array(css_searchkey)
+        
+        doc = ParsePage()
+        
+        # Tableを探す        
+        elts = doc.css(css_searchkey)
+        if elts[0].name != "table" then
+            elts = elts[0].css("table")
+        end
+        table = elts[0]
+
+        # 行ごとに処理
+        rows = table.css("tr")
+        if is_empty(rows) then
+            raise "Table has no data."
+        end
+        lines = Array.new(rows.length)
+        
+        i = 0
+        while (i < rows.length) 
+            cols = rows[i].css("td")
+            if is_empty(cols) then
+                raise "Row has no data."
+            end
+            
+            lines[i] = Array.new(cols.length)
+            l = 0
+            while (l < cols.length)
+                lines[i][l] = cols[l].inner_text.strip
+                l += 1
+            end
+            i += 1
+        end        
+      
+        return lines    
+         
     end
     
     def SetFormFirstField(form_name, val)
@@ -350,15 +428,55 @@ class CWebAppEco < CWebApp
     def initialize(b_url, dbg = 0)
         super(b_url, dbg)
         @agent.follow_meta_refresh = true
+        @encoding = "CP932" #for shimazaki-san, kawasaki-san
     end
     
+    # スケジュール検索ページへ移動
+    def jump_to_searchpage()
+        path = @agent.page.uri.path
+        if (path != ECO_SEARCH_PAGE) then
+            self.Go(ECO_SEARCH_PAGE)
+        end
+    end
+    
+    # スケジュールの詳細ページを取得
+    def get_schedule_detail(event)
+        
+        # スケジュール詳細ページへ
+        self.Go("/cgi-bin/" + event[ECOLIST_DATETIME])
+        doc = self.ParsePage()
+        if (doc == nil)
+            raise "Document Body not found."
+        end
+        
+        # スケジュール詳細ページの項目値を配列に
+        rows = doc.css("td.DefT")
+        if (rows == nil || rows.size == 0)
+            raise "Data Table Row not found."
+        end
+        detail = Array.new()
+        rows.each { |r|
+            detail.push(r.inner_text.strip)
+        }
+        
+        return detail      
+    end
+    
+    # 指定日のスケジュール一覧を取得
     def GetEventsforDay(theday)
+    
+        # 検索ページに移動
+        jump_to_searchpage()
         
         form = search_form(@agent.page, "tskfil")
         if (form == nil)
             raise "Form Not Found. [tskfil]"
         end
         
+        # 検索条件1:「予定」と「結果」両方を含む
+        form.field_with(:name => "fRstType").value = "0"
+        
+        # 検索条件2: 日付範囲を指定するドロップダウンリストをセット
         search_keys = Array.new()
         search_keys.push(Array.new(["FMinYear",    theday.year.to_s]))
         search_keys.push(Array.new(["FMinMonth",   theday.month.to_s]))
@@ -366,82 +484,78 @@ class CWebAppEco < CWebApp
         search_keys.push(Array.new(["FMaxYear",    theday.year.to_s]))
         search_keys.push(Array.new(["FMaxMonth",   theday.month.to_s]))
         search_keys.push(Array.new(["FMaxDay",     theday.day.to_s]))
-        
         set_options(form, search_keys)
         
+        # 検索実行
         form.submit
         
+        # 検索結果のスケジュール一覧を配列に格納
         arr = RetrieveList("table.DefT", method(:proc_split_table_to_array))
         if (arr[1].length == 1)
             # this means no data.
             arr.delete_at(1)
         end
+        # ヘッダー除去
         arr.delete_at(0)
         
         return arr
     end
     
+    # 指定された期間のスケジュールを配列で返す
+    def GetEvents(start_date, end_date)
+       
+        d = start_date
+        arr = Array.new()
+         
+        while (d <= end_date) do
+            arr.concat(GetEventsforDay(d))
+            d = d + 1
+        end
+        
+        return arr
+    end
+    
+    # この先一週間のスケジュールを配列で返す
     def GetEventsForWeek()
-        
-        i = 0
         d = Date.today()
-        
-        arr = Array.new()
-        while (i < 7)
-            arr.concat(GetEventsforDay(d + i))
-            i = i + 1
-        end
-        
-        return arr
-    
+        return GetEvents(d, d + 7)    
     end
     
+    # この先1か月のスケジュールを配列で返す
     def GetEventsForMonth()
-        i = 0
         d = Date.today()
-        arr = Array.new()
-        while (i < 31)
-            arr.concat(GetEventsforDay(d + i))
-            i = i + 1
-        end
+        return GetEvents(d, d + 31)    
+    end
+
+    def GetEventDetailforG(event)
+    
+        # スケジュールの詳細を配列で取得
+        detail = get_schedule_detail(event)
+              
+        # 開始日時終了日時を開始日、開始時刻、終了日、終了時刻に分離
+        if (detail[ECOCSV_SCHEDULE] != nil) then
+            t = split_event_time(detail[ECOCSV_SCHEDULE], MODE_GAROON)
+        end 
+
+        # GAROON用配列にセット
+        arr = Array.new(GARCSV_SCHEDULE_MEMO)
+        arr[GARCSV_STARTDATE] = t[0]
+        arr[GARCSV_STARTTIME] = t[2]
+        arr[GARCSV_STOPDATE] = t[1]
+        arr[GARCSV_STOPTIME] = t[3]
+        arr[GARCSV_SCHEDULE_MENU]   = ""  #should be empty.
+        arr[GARCSV_SCHEDUEL_TITLE]  = detail[ECOCSV_TITLE]
+        arr[GARCSV_SCHEDULE_MEMO]   = @base_url + "/cgi-bin/" + url
+        
         return arr
     end
     
-    def GetPastEvents()
-        i = 0
-        d = Date.today()
-        arr = Array.new()
-        while (i < 90)
-            arr.concat(GetEventsforDay(d - i))
-            i = i + 1
-        end
-        return arr
-    end
-
-
     def GetEventDetail(event)
         
-        url = event[3]
-        
-        Go("/cgi-bin/" + url)
-        
-        doc = Nokogiri::HTML.parse(@agent.page.body, nil, @encoding ? @encoding : @agent.page.encoding)
-        if (doc == nil)
-            raise "Document Body not found."
-        end
-        
-        rows = doc.css("td.DefT")
-        if (rows == nil || rows.size == 0)
-            raise "Data Table Row not found."
-        end
-        
-        detail = Array.new()
-        rows.each { |r|
-            detail.push(r.inner_text.strip)
-        }
-        
-        p detail if @debug == 1
-        
+        # スケジュールの詳細を配列で取得
+        detail = get_schedule_detail(event)
+
+        # 日付を整形        
         if (detail[5] != nil) then
             t = split_event_time(detail[5])
             event.push(t[0])
@@ -450,15 +564,17 @@ class CWebAppEco < CWebApp
             event.push("")
             event.push("")
         end
-        
-        p t if @debug == 1
-        
+                
+        # 場所情報を加工
         event.push(shrink_place(detail[12]))
+        
+        # スケジュールIDも取っておく
         s = url.index("&tskno=") + "&tskno=".length
         e = url.index("&sday=")
         event.push(url[s, e - s])
-        
+              
     end
+    
 end
 
 class CWebAppGoogle < CWebApp
