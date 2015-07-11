@@ -62,39 +62,30 @@ begin
     puts("Log in Eco ...")
     site.Login("/cgi-bin/Eco.cgi", "loginf", login_info)
     p site.GetPage() if use_dump == 1
-    puts("Log in Eco done.")
     
     puts("Getting Schedule from Eco ...")
-    p site.GetPage() if use_dump == 1
     if get_month == 1 then
         events = site.GetEventsForMonth()
     else
         events = site.GetEventsForWeek()
     end
-    puts("Getting Schedule from Eco done")
-    
-    puts("Getting Schedule detail from Eco ...")
     p site.GetPage() if use_dump == 1
     p events if use_debug == 1    
+    
+    puts("Getting Schedule detail from Eco ...")
+    arr = Array.new
     events.each { | ev |
-        site.GetEventDetail(ev)
+        arr.push(site.GetEventDetail(ev))
     }
-    compress(events)
-    puts("Getting Schedule detail from Eco done")
     
     puts("Log in Google ...")
     google.Login()
-    puts("Log in Google done")
     
     puts("Upload schedule to Google ...")
-    google.WriteArray(events)
-    puts("Upload schedule to Google done")
+    google.WriteArray(arr)
     
-    if get_past == 0 then
-        puts("Update Google Calendar ...")
-        google.Kick_(path, "ss2cal") 
-        puts("Update Google Calendar done")
-    end
+    puts("Update Google Calendar ...")
+    google.Kick_(path, "ss2cal") 
         
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     

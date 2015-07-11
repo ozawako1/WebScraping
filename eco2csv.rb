@@ -67,12 +67,12 @@ begin
     puts("Getting Schedule detail from Eco ...")
     arr = Array.new()
     events.each { | ev |
-        arr.push(site.GetEventDetailforG(ev))
+        arr.push(site.GetEventDetail(ev, MODE_GAROON))
     }
     
     # CSVに保存
     puts("Flushing CSV ...")
-    flush_to_csv(arr, pt + "eco2garoon.csv")
+    flush_to_csv(arr, pt + "eco2garoon.csv", true)
             
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     

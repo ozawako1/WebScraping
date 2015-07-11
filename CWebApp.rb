@@ -30,7 +30,14 @@ GARCSV_SCHEDULE_MENU    = 4
 GARCSV_SCHEDUEL_TITLE   = 5
 GARCSV_SCHEDULE_MEMO    = 6
 
-ECOLIST_DATETIME = 3
+GOCCSV_TITLE = 0
+GOCCSV_BEGIN_UNIXTIME = 1
+GOCCSV_END_UNIXTIME = 2
+GOCCSV_FACILITY = 3
+GOCCSV_OPTION = 4
+GOCCSV_MAX = GOCCSV_OPTION
+
+ECOLIST_URL = 3
 
 ECOCSV_REG_INFO = 0
 ECOCSV_UPD_INFO = 1
@@ -155,16 +162,20 @@ class CWebApp
         return itm
     end
     
-    def Table2Array(css_searchkey)
+    def Table2Array(css_searchkey, order = 0)
         
         doc = ParsePage()
         
         # Tableを探す        
         elts = doc.css(css_searchkey)
+        if is_empty(elts) then
+            raise "Table not found."
+        end
+        
         if elts[0].name != "table" then
             elts = elts[0].css("table")
         end
-        table = elts[0]
+        table = elts[order]
 
         # 行ごとに処理
         rows = table.css("tr")
@@ -439,29 +450,29 @@ class CWebAppEco < CWebApp
         end
     end
     
-    # スケジュールの詳細ページを取得
+    # スケジュールの詳細を配列で取得
     def get_schedule_detail(event)
         
         # スケジュール詳細ページへ
-        self.Go("/cgi-bin/" + event[ECOLIST_DATETIME])
+        self.Go("/cgi-bin/" + event[ECOLIST_URL])
         doc = self.ParsePage()
         if (doc == nil)
             raise "Document Body not found."
         end
         
         # スケジュール詳細ページの項目値を配列に
-        rows = doc.css("td.DefT")
-        if (rows == nil || rows.size == 0)
-            raise "Data Table Row not found."
-        end
-        detail = Array.new()
-        rows.each { |r|
-            detail.push(r.inner_text.strip)
-        }
+        csskey = 'table[width="100%"][border="0"][cellpadding="1"][cellspacing="2"]'
+        detail = Table2Array(csskey, 1)
+        # 見出し行を削除
+        detail.delete_at(0) 
+        
+        # 配列からHashに。
+        detail = Hash[*detail.flatten]
+        p detail if @debug == 1
         
         return detail      
     end
-    
+        
     # 指定日のスケジュール一覧を取得
     def GetEventsforDay(theday)
     
@@ -527,52 +538,48 @@ class CWebAppEco < CWebApp
         return GetEvents(d, d + 31)    
     end
 
-    def GetEventDetailforG(event)
     
-        # スケジュールの詳細を配列で取得
-        detail = get_schedule_detail(event)
-              
-        # 開始日時終了日時を開始日、開始時刻、終了日、終了時刻に分離
-        if (detail[ECOCSV_SCHEDULE] != nil) then
-            t = split_event_time(detail[ECOCSV_SCHEDULE], MODE_GAROON)
-        end 
-
-        # GAROON用配列にセット
-        arr = Array.new(GARCSV_SCHEDULE_MEMO)
-        arr[GARCSV_STARTDATE] = t[0]
-        arr[GARCSV_STARTTIME] = t[2]
-        arr[GARCSV_STOPDATE] = t[1]
-        arr[GARCSV_STOPTIME] = t[3]
-        arr[GARCSV_SCHEDULE_MENU]   = ""  #should be empty.
-        arr[GARCSV_SCHEDUEL_TITLE]  = detail[ECOCSV_TITLE]
-        arr[GARCSV_SCHEDULE_MEMO]   = @base_url + "/cgi-bin/" + url
+    def GetEventDetail(event, mode = MODE_NORMAL)
+        
+        begin
+            # スケジュールの詳細を配列で取得
+            detail = get_schedule_detail(event)
+        
+            # 開始日時終了日時を開始日、開始時刻、終了日、終了時刻に分離
+            eco_date = detail["予定日時"]
+            if (eco_date == nil) then
+                eco_date = detail["予定期間"]
+            end
+            t = split_event_time(eco_date, mode)
+        
+            case mode
+            when MODE_NORMAL
+                # GAS用配列にセット
+                arr = Array.new(GOCCSV_MAX)
+                arr[GOCCSV_TITLE] = detail["予定"]
+                arr[GOCCSV_BEGIN_UNIXTIME]  = t[0]
+                arr[GOCCSV_END_UNIXTIME]    = t[1]
+                arr[GOCCSV_FACILITY] = shrink_place(detail["設備"])
+                arr[GOCCSV_OPTION] = @base_url + "/cgi-bin/" + event[ECOLIST_URL]
+            when MODE_GAROON            
+                # GAROON用配列にセット
+                arr = Array.new(GARCSV_SCHEDULE_MEMO)
+                arr[GARCSV_STARTDATE] = t[0]
+                arr[GARCSV_STARTTIME] = t[2]
+                arr[GARCSV_STOPDATE] = t[1]
+                arr[GARCSV_STOPTIME] = t[3]
+                arr[GARCSV_SCHEDULE_MENU]   = ""  #should be empty.
+                arr[GARCSV_SCHEDUEL_TITLE]  = detail["予定"]
+                arr[GARCSV_SCHEDULE_MEMO]   = @base_url + "/cgi-bin/" + event[ECOLIST_URL]
+            end
+            
+        rescue => e
+            p e
+            p detail
+            raise e
+        end
         
         return arr
-    end
-    
-    def GetEventDetail(event)
-        
-        # スケジュールの詳細を配列で取得
-        detail = get_schedule_detail(event)
-
-        # 日付を整形        
-        if (detail[5] != nil) then
-            t = split_event_time(detail[5])
-            event.push(t[0])
-            event.push(t[1])
-        else
-            event.push("")
-            event.push("")
-        end
-                
-        # 場所情報を加工
-        event.push(shrink_place(detail[12]))
-        
-        # スケジュールIDも取っておく
-        s = url.index("&tskno=") + "&tskno=".length
-        e = url.index("&sday=")
-        event.push(url[s, e - s])
-              
     end
     
 end

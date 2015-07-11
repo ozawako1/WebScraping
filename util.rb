@@ -7,6 +7,8 @@ require "json"
 
 CHECK_FILE = "/var/tmp/commit_amoeba.chk"
 CONFIG = "/etc/ozawaapps/webapps.json"
+MODE_NORMAL = 0
+MODE_GAROON = 1
 
 def getdatestr(dif = 0)
 	ret = Date::today + dif
@@ -77,8 +79,8 @@ def get_first_day_of_amoebamonth()
 end
 
 
-def flush_to_csv(arr, csvfile)
-    CSV.open(csvfile, "w") do |writer|
+def flush_to_csv(arr, csvfile, quote = false)
+    CSV.open(csvfile, "w", :force_quotes => quote) do |writer|
         arr.each do |line|
             writer << line
         end
@@ -100,11 +102,11 @@ def set_config(webapp, key, value)
     end
 end
 
-MODE_NORMAL = 0
-MODE_GAROON = 1
-
-
 def split_event_time(event_time, mode = MODE_NORMAL)
+    
+    if (event_time == nil) then
+        raise "Invalid Arg event_time = nil"
+    end
     
     str = event_time.split("〜")
     arr = Array.new(4)
