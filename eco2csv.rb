@@ -40,7 +40,7 @@ ARGV.each { |arg|
     end
 }
 
-
+# 設定ファイルからID/Password等を取得する
 id = get_config("Eco","UserID")
 pd = get_config("Eco","password")
 pt = get_config("COMMON", "CSVPath")
@@ -53,7 +53,6 @@ if site == nil
     exit
 end
 
-
 begin
     # ECOにログイン
     puts("Log in Eco ...")
@@ -63,14 +62,14 @@ begin
     puts("Getting Schedule from Eco ...")
     events = site.GetEvents(b_date, e_date)
     
-    # 一覧の各スケジュールについて、詳細を取得
+    # 一覧の各スケジュールについて、詳細を取得し、配列に格納
     puts("Getting Schedule detail from Eco ...")
     arr = Array.new()
     events.each { | ev |
         arr.push(site.GetEventDetail(ev, MODE_GAROON))
     }
     
-    # CSVに保存
+    # 配列をsCSVに出力
     puts("Flushing CSV ...")
     flush_to_csv(arr, pt + "eco2garoon.csv", true)
             

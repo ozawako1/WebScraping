@@ -542,14 +542,11 @@ class CWebAppEco < CWebApp
     def GetEventDetail(event, mode = MODE_NORMAL)
         
         begin
-            # スケジュールの詳細を配列で取得
+            # スケジュールの詳細をハッシュで取得
             detail = get_schedule_detail(event)
         
             # 開始日時終了日時を開始日、開始時刻、終了日、終了時刻に分離
-            eco_date = detail["予定日時"]
-            if (eco_date == nil) then
-                eco_date = detail["予定期間"]
-            end
+            eco_date = detail.fetch("予定日時", detail["予定期間"])
             t = split_event_time(eco_date, mode)
         
             case mode
@@ -574,7 +571,6 @@ class CWebAppEco < CWebApp
             end
             
         rescue => e
-            p e
             p detail
             raise e
         end
