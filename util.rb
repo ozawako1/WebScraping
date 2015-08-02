@@ -234,3 +234,4 @@ def shrink_place(place)
     
     return ret
 end
+
