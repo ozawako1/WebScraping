@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
 
 require "date"
 require "csv"
@@ -5,6 +7,8 @@ require "json"
 
 CHECK_FILE = "/var/tmp/commit_amoeba.chk"
 CONFIG = "/etc/ozawaapps/webapps.json"
+MODE_NORMAL = 0
+MODE_GAROON = 1
 
 def getdatestr(dif = 0)
 	ret = Date::today + dif
@@ -75,8 +79,8 @@ def get_first_day_of_amoebamonth()
 end
 
 
-def flush_to_csv(arr, csvfile)
-    CSV.open(csvfile, "w") do |writer|
+def flush_to_csv(arr, csvfile, quote = false)
+    CSV.open(csvfile, "w", :force_quotes => quote) do |writer|
         arr.each do |line|
             writer << line
         end
@@ -88,29 +92,71 @@ def get_config(webapp, key)
     return hash[webapp][key]
 end
 
-def split_event_time(event_time)
+def set_config(webapp, key, value)
     
-    str = event_time.split("～")
-    arr = Array.new(2)
+    hash = JSON.parse(File.read(CONFIG))
+    hash[webapp][key] = value
+    
+    File.open(CONFIG, "w") do |f|
+        f.write(JSON.pretty_generate(hash))
+    end
+end
+
+def split_event_time(event_time, mode = MODE_NORMAL)
+    
+    if (event_time == nil) then
+        raise "Invalid Arg event_time = nil"
+    end
+    
+    str = event_time.split("〜")
+    arr = Array.new(4)
     
     if (str[0].index(":") != nil )
-        arr[0] = Time.strptime(str[0], "%Y年%m月%d日　%H:%M").to_i
+        arr[0] = Time.strptime(str[0], "%Y年%m月%d日　%H:%M")
     else
-        arr[0] = Time.strptime(str[0], "%Y年%m月%d日").to_i
+        arr[0] = Time.strptime(str[0], "%Y年%m月%d日")
     end
     
 	if (str[1] != nil) 
     	if (str[1].index(":") != nil )
         	tmp = str[0].split("　")
-        	arr[1] = Time.strptime(tmp[0] + str[1], "%Y年%m月%d日 %H:%M").to_i
+        	arr[1] = Time.strptime(tmp[0] + str[1], "%Y年%m月%d日 %H:%M")
     	else
-			arr[1] = Time.strptime(str[1], " %Y年%m月%d日").to_i
+			arr[1] = Time.strptime(str[1], " %Y年%m月%d日")
     	end
 	else
-		str[1] = ""
+        # 開始日と同じに
+		arr[1] = arr[0]
 	end
     
+    
+    if (mode == MODE_NORMAL) then
+        # UNIXTIME
+        arr[0] = arr[0].to_i
+        arr[1] = arr[1].to_i
+    elsif (mode == MODE_GAROON) then
+        # Garoon CSV string
+        arr[3] = arr[1].strftime("%H:%M:%S")
+        arr[2] = arr[0].strftime("%H:%M:%S")
+        arr[1] = arr[1].strftime("%Y/%m/%d")
+        arr[0] = arr[0].strftime("%Y/%m/%d")
+    end    
+
+    
     return arr
+end
+
+def is_empty(obj)
+    
+    ret = false
+    
+    if (obj == nil)
+        ret = true
+    elsif (obj.length == 0)
+        ret = true
+    end
+    
+    return ret
 end
 
 def shrink_place(place)
@@ -131,7 +177,7 @@ def shrink_place(place)
     "【東京】ミーティングルーム2（6席）※テレビ会議常設※" => "東京MTGRoom2",
     "【東京】プロジェクター（持ち出し用/EPSON）" => "東京ProjectorEPSON",
     "【名古屋】プロジェクター（持ち出し用/EPSON）" => "名古屋ProjectorEPSON",
-    "【大阪】2,3Fセミナーホール※テレビ会議常設※" => "大阪FHall",
+    "【大阪】2,3Fセミナーホール※テレビ会議常設※" => "大阪2F3FHall",
     "【大阪】4Fオレンジ" => "大阪Orange",
     "【大阪】4Fグリーン" => "大阪Green",
     "【大阪】4Fイエロー" => "大阪Yellow",
@@ -188,3 +234,4 @@ def shrink_place(place)
     
     return ret
 end
+

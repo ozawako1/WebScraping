@@ -11,26 +11,79 @@ require_relative "proc"
 
 HARVEST_FILTER_FORM = "expense_report_filter_form"
 HARVEST_FILTER_TYPE_DEPT = "departments"
+HARVEST_PAGE_LOGIN = "/account/login"
+HARVEST_FORM_LOGIN = "signin_form"
+
 
 AMOEBA_PAGE_LOGIN = "/"
 AMOEBA_APPLY_SCRIPT    = 1
 AMOEBA_APPROVE_SCRIPT  = 2
+AMOEBA_APPLY_SCRIPT_SEARCH    = 3
+AMOEBA_APPROVE_SCRIPT_SEARCH  = 4
 AMOEBA_FORM = "formMain"
+
+GARCSV_STARTDATE    = 0
+GARCSV_STARTTIME    = 1
+GARCSV_STOPDATE = 2
+GARCSV_STOPTIME = 3
+GARCSV_SCHEDULE_MENU    = 4
+GARCSV_SCHEDUEL_TITLE   = 5
+GARCSV_SCHEDULE_MEMO    = 6
+
+GOCCSV_TITLE = 0
+GOCCSV_BEGIN_UNIXTIME = 1
+GOCCSV_END_UNIXTIME = 2
+GOCCSV_FACILITY = 3
+GOCCSV_OPTION = 4
+GOCCSV_MAX = GOCCSV_OPTION
+
+ECOLIST_URL = 3
+
+ECOCSV_REG_INFO = 0
+ECOCSV_UPD_INFO = 1
+ECOCSV_ORDER_USER   = 2
+ECOCSV_TITLE    = 3
+ECOCSV_PRIORITY = 4
+ECOCSV_SCHEDULE = 5
+ECOCSV_EXECUTE  = 6
+ECOCSV_OPEN_TO  = 7
+ECOCSV_SCHEDULE_MEMO    = 8
+ECOCSV_EXEC_MEM0    = 9
+ECOCSV_USERS    = 10
+ECOCSV_PLACE    = 11
+ECOCSV_INFRA    = 12
+ECOCSV_PROJECT  = 13
+ECOCSV_TARGET   = 14
+ECOCSV_PREPARE  = 15
+ECOCSV_FINISH   = 16
+ECOCSV_PROCESS  = 17
 
 GOOGLE_CALSYNC_FILE = "CalSync"
 GOOGLE_HVALARM_FILE = "HarvestAlert"
 
+GAROON_PAGE_LOGIN = "login"
+GAROON_FORM_LOGIN = "login-form-slash"
+
+ECO_SEARCH_PAGE = "/cgi-bin/BSCD.cgi"
+
 
 class CWebApp
-	attr_reader :base_url, :agent
+	attr_reader :base_url, :agent, :encoding, :doc
     attr_accessor :debug
 
-	def initialize(agent, b_url, dbg = 0)
-		@agent	= agent
+	def initialize(b_url, dbg = 0)
+		@agent	= Mechanize.new
+        @agent.user_agent = "CWebApp/1.0 (Mechanize; Nokogiri)"
         @base_url	= b_url
-		@debug = dbg
+		@debug    = dbg
+        @encoding   = nil
+        @doc    = nil
 	end
-
+    
+    def SetProxy(proxy_ipaddr, proxy_port)
+        @agent.set_proxy(proxy_ipaddr, proxy_port)
+    end
+    
 	def Login(page_login, f_login, info_login)
         
 		l_page = @base_url + page_login
@@ -60,16 +113,18 @@ class CWebApp
 		f.submit
 	end
     
+    
     def Go(url)
-        p ("Page :" + url) if @debug == 1
+        p ("Page :" + @base_url + url) if @debug == 1
         @agent.get(@base_url + url)
+        @doc = nil
     end
 
     def RetrieveList(list_name, func)
         
-        summary = Array.new
+        summary = Array.new()
         
-        doc = Nokogiri::HTML.parse(@agent.page.body)
+        doc = ParsePage()
         if (doc == nil)
             raise "Document Body not found."
         end
@@ -85,19 +140,87 @@ class CWebApp
         
         return summary
     end
-
+    
+    def ParsePage()
+        # if @doc == nil then
+            @doc = Nokogiri::HTML.parse(@agent.page.body, nil, @encoding ? @encoding : @agent.page.encoding)
+        # end
+        return @doc
+    end
+    
     def GetItem(css)
-        doc = Nokogiri::HTML.parse(@agent.page.body)
+        doc = ParsePage() 
         if (doc == nil)
             raise "Document Body not found."
         end
         
         itm = doc.css(css)
         if (itm == nil || itm.size == 0) then
-            raise "Data not found."
+            raise "Data not found. (" + css + ")"
         end
         
         return itm
+    end
+    
+    def Table2Array(css_searchkey, order = 0)
+        
+        doc = ParsePage()
+        
+        # Tableを探す        
+        elts = doc.css(css_searchkey)
+        if is_empty(elts) then
+            raise "Table not found."
+        end
+        
+        if elts[0].name != "table" then
+            elts = elts[0].css("table")
+        end
+        table = elts[order]
+
+        # 行ごとに処理
+        rows = table.css("tr")
+        if is_empty(rows) then
+            raise "Table has no data."
+        end
+        lines = Array.new(rows.length)
+        
+        i = 0
+        while (i < rows.length) 
+            cols = rows[i].css("td")
+            if is_empty(cols) then
+                raise "Row has no data."
+            end
+            
+            lines[i] = Array.new(cols.length)
+            l = 0
+            while (l < cols.length)
+                lines[i][l] = cols[l].inner_text.strip
+                l += 1
+            end
+            i += 1
+        end        
+      
+        return lines    
+         
+    end
+    
+    def SetFormFirstField(form_name, val)
+        if (form_name == nil || form_name == "")
+            raise "Form Name is not given."
+        end
+        
+        f = search_form(@agent.page, form_name)
+        if (f == nil)
+            raise "Form Not Found. [" + form_name + "]"
+        end
+        
+        fls = f.fields
+        if (fls == nil)
+            raise "No Field exist."
+        end
+        
+        fls[0].value = val
+        
     end
     
     def SetForm(form_name, keyvals)
@@ -125,7 +248,7 @@ class CWebApp
     
     end
 
-    def Execute(form_name, script = 0)
+    def Execute(form_name, button_name = nil, script = 0)
         
         if (form_name == nil || form_name == "")
             raise "Form Name is not given."
@@ -142,7 +265,16 @@ class CWebApp
             f.encoding = "Shift_JIS"
         end
         
-        f.submit
+        if (button_name == nil) 
+            f.submit
+        else
+            btn = f.button_with(:value => button_name)
+            if (btn == nil)
+                raise "Button [" + button_name + "] not found."
+            end
+            f.click_button(btn)           
+        end
+        
     end
     
     def FollowLink(linkName)
@@ -174,14 +306,27 @@ class CWebAppHarvest < CWebApp
 end
 
 class CWebAppAmoeba < CWebApp
-    
-    def Jump(menu_id)
-        path = sprintf("/Main?actionbean=Shortcut&menuID=%s&referer=%%2Fshare%%2Fmenu.jsp&isForwardManagement=1&forward_mng_menu_id=%s", menu_id, menu_id)
-        p ("Page : " + path) if @debug == 1
-        @agent.get(@base_url + path)
+
+    def initialize(b_url, dbg = 0)
+        super(b_url, dbg)
+        @encoding = "CP932"
     end
     
-    def GetWorkHours()
+    def Jump(menu_id)
+        jump_url = "/Main?actionbean=Shortcut&menuID=%s&referer=%%2Fshare%%2Fmenu.jsp" +
+                   "&isForwardManagement=1&forward_mng_menu_id=%s"
+        self.Go(jump_url%[menu_id, menu_id])
+    end
+    
+    def GetWorkHoursByEmpCode(emp_code)
+        work_hours_page = "/Main?referer=/teams/KTO/PKTO331%%2Fsearchlist.jsp" +
+                          "&prepage=/sharemenu.jsp&menuID=PKTO331&forward=searchlist.jsp" +
+                          "&service=jp.co.kccs.greenearth.erp.kto.pkto331.PersonalCalendarService" +
+                          "&actionbean=GetList&mode=search&listsize=-1&no_header=" +
+                          "&Objective_DT_P=%d/%02d&Time_CL_1=1&Stuff_No_0=%s&Name="
+        
+        self.Go(work_hours_page%[Time.now.year, Time.now.month, emp_code])
+    
         itm = self.GetItem("#TTL_Fixed_Time_lbl")
         hours = itm[1].text.strip
         
@@ -193,71 +338,6 @@ class CWebAppAmoeba < CWebApp
         return hours
     end
     
-    def RunJS(script)
-        
-        form = search_form(@agent.page, AMOEBA_FORM)
-        if (form == nil)
-            raise "Form Not Found. [" + AMOEBA_FORM + "]"
-        end
-
-        key_val = Hash.new
-        target_date = getlastworkday()
-        
-        case script
-        when AMOEBA_APPLY_SCRIPT
-            key_val = {
-                "mode"          => "search",
-                "forward"       => "editlist.jsp",
-                "actionbean"    => "GetList",
-                "service"       => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
-                "Target_DT_Temp"    => target_date,
-                "Target_DT_KEY"     => target_date,
-                "ORG_CD_KEY"        => form.Belong_ORG_CD_1,
-                "ORG_NA_KEY"        => form.ORG_NA,
-                "Stuff_No_CONDITION"    => form.Stuff_No_2,
-                "Name_CONDITION"    => form.DispName,
-                "ORG_CD_CONDITION"  => form.Belong_ORG_CD_1,
-                "ORG_NA_CONDITION"  => form.ORG_NA
-            }
-        when AMOEBA_APPROVE_SCRIPT
-            key_val = {
-                "mode"          => "search",
-                "forward"       => "editlist.jsp",
-                "actionbean"    => "GetList",
-                "service"       => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
-                "Target_DT_Temp"    => target_date,
-                "Target_DT_KEY"     => target_date,
-                "ORG_CD_KEY"        => form.Belong_ORG_CD_1,
-                "ORG_NA_KEY"        => form.ORG_NA,
-                "Stuff_No_CONDITION"    => form.Stuff_No_2,
-                "Name_CONDITION"    => form.DispName,
-                "ORG_CD_CONDITION"  => form.Belong_ORG_CD_1,
-                "ORG_NA_CONDITION"  => form.ORG_NA
-            }
-        end
-        
-        key_val.keys.each { |k|
-            fl = nil
-            fl = form.field_with(:name => k)
-            if (fl == nil)
-                fls = form.add_field!(k)
-                if (fls == nil)
-                    raise "Field could not be created. [" + k.to_s + "]"
-                end
-                fl = fls[0]
-            end
-            fl.value = key_val[k]
-        }
- 
- 
-        if (form.encoding == "Cp943C")
-            form.encoding = "Shift_JIS"
-        end
-        
-        form.click_button
-
-    end
-    
     def pre_execute(form, script)
         
         key_val = Hash.new
@@ -266,37 +346,68 @@ class CWebAppAmoeba < CWebApp
         case script
         when AMOEBA_APPLY_SCRIPT
             key_val = {
-                "Decide_chk"    => "on",
-                "Decide"        => "1",
-                "forward"       => "editlist.jsp",
-                "actionbean"    => "SaveList",
-                "mode"          => "appli",
-                "service"       => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
-                "Target_DT_Temp"    => target_date,
-                "ORG_CD_KEY"    => form.Belong_ORG_CD_1,
+                "mode"                  => "appli",
+                "forward"               => "editlist.jsp",
+                "actionbean"            => "SaveList",
+                "service"               => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
+                "Target_DT_Temp"        => target_date,
+#               "Target_DT_Key"         => 
+                "ORG_CD_KEY"            => form.Belong_ORG_CD_1,
+#               "ORG_NA_KEY"            => 
+                "ORG_CD_CONDITION"      => form.Belong_ORG_CD_1,
+                "ORG_NA_CONDITION"      => form.ORG_NA,
                 "Stuff_No_CONDITION"    => form.Stuff_No_2,
-                "ORG_CD_CONDITION"  => form.Belong_ORG_CD_1,
-                "ORG_NA_CONDITION"  => form.ORG_NA
+                "Decide_chk"            => "on",
+                "Decide"                => "1"
             }
         when AMOEBA_APPROVE_SCRIPT
             key_val = {
-                "forward"       => "editlist.jsp",
-                "actionbean"    => "SaveList",
-                "mode"          => "approval",
-                "service"       => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
-                "Target_DT_Temp"    => target_date,
-                "Target_DT_KEY" => target_date,
-                "ORG_CD_KEY"    => form.Belong_ORG_CD_1,
-                "ORG_NA_KEY"    => form.ORG_NA,
+                "mode"                  => "approval",
+                "forward"               => "editlist.jsp",
+                "actionbean"            => "SaveList",
+                "service"               => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
+                "Target_DT_Temp"        => target_date,
+                "Target_DT_KEY"         => target_date,
+                "ORG_CD_KEY"            => form.Belong_ORG_CD_1,
+                "ORG_NA_KEY"            => form.ORG_NA,
+                "ORG_CD_CONDITION"      => form.Belong_ORG_CD_1,
+                "ORG_NA_CONDITION"      => form.ORG_NA,
                 "Stuff_No_CONDITION"    => form.Stuff_No_2,
-                "Name_CONDITION"    => form.DispName,
-                "ORG_CD_CONDITION"  => form.Belong_ORG_CD_1,
-                "ORG_NA_CONDITION"  => form.ORG_NA
+                "Name_CONDITION"        => form.DispName
+            }
+        when AMOEBA_APPLY_SCRIPT_SEARCH
+            key_val = {
+                "mode"                  => "search",
+                "forward"               => "editlist.jsp",
+                "actionbean"            => "GetList",
+                "service"               => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
+                "Target_DT_Temp"        => target_date,
+                "Target_DT_KEY"         => target_date,
+                "ORG_CD_KEY"            => form.Belong_ORG_CD_1,
+                "ORG_NA_KEY"            => form.ORG_NA,
+                "ORG_CD_CONDITION"      => form.Belong_ORG_CD_1,
+                "ORG_NA_CONDITION"      => form.ORG_NA,
+                "Stuff_No_CONDITION"    => form.Stuff_No_2,
+                "Name_CONDITION"        => form.DispName
+            }
+        when AMOEBA_APPROVE_SCRIPT_SEARCH
+            key_val = {
+                "mode"                  => "search",
+                "forward"               => "editlist.jsp",
+                "actionbean"            => "GetList",
+                "service"               => "jp.co.kccs.greenearth.erp.kto.pkto318.PKTO318DisplayService",
+                "Target_DT_Temp"        => target_date,
+                "Target_DT_KEY"         => target_date,
+                "ORG_CD_KEY"            => form.Belong_ORG_CD_1,
+                "ORG_NA_KEY"            => form.ORG_NA,
+                "ORG_CD_CONDITION"      => form.Belong_ORG_CD_1,
+                "ORG_NA_CONDITION"      => form.ORG_NA,
+                "Stuff_No_CONDITION"    => form.Stuff_No_2,
+                "Name_CONDITION"        => form.DispName
             }
         else
             raise "Unknown script type."
         end
-        
         
         key_val.keys.each { |k|
             fl = nil
@@ -325,18 +436,58 @@ end
 
 class CWebAppEco < CWebApp
     
-    def initialize(agent, b_url, dbg = 0)
-        super(agent, b_url, dbg)
+    def initialize(b_url, dbg = 0)
+        super(b_url, dbg)
         @agent.follow_meta_refresh = true
+        @encoding = "CP932" #for shimazaki-san, kawasaki-san
     end
     
+    # スケジュール検索ページへ移動
+    def jump_to_searchpage()
+        path = @agent.page.uri.path
+        if (path != ECO_SEARCH_PAGE) then
+            self.Go(ECO_SEARCH_PAGE)
+        end
+    end
+    
+    # スケジュールの詳細を配列で取得
+    def get_schedule_detail(event)
+        
+        # スケジュール詳細ページへ
+        self.Go("/cgi-bin/" + event[ECOLIST_URL])
+        doc = self.ParsePage()
+        if (doc == nil)
+            raise "Document Body not found."
+        end
+        
+        # スケジュール詳細ページの項目値を配列に
+        csskey = 'table[width="100%"][border="0"][cellpadding="1"][cellspacing="2"]'
+        detail = Table2Array(csskey, 1)
+        # 見出し行を削除
+        detail.delete_at(0) 
+        
+        # 配列からHashに。
+        detail = Hash[*detail.flatten]
+        p detail if @debug == 1
+        
+        return detail      
+    end
+        
+    # 指定日のスケジュール一覧を取得
     def GetEventsforDay(theday)
+    
+        # 検索ページに移動
+        jump_to_searchpage()
         
         form = search_form(@agent.page, "tskfil")
         if (form == nil)
             raise "Form Not Found. [tskfil]"
         end
         
+        # 検索条件1:「予定」と「結果」両方を含む
+        form.field_with(:name => "fRstType").value = "0"
+        
+        # 検索条件2: 日付範囲を指定するドロップダウンリストをセット
         search_keys = Array.new()
         search_keys.push(Array.new(["FMinYear",    theday.year.to_s]))
         search_keys.push(Array.new(["FMinMonth",   theday.month.to_s]))
@@ -344,76 +495,97 @@ class CWebAppEco < CWebApp
         search_keys.push(Array.new(["FMaxYear",    theday.year.to_s]))
         search_keys.push(Array.new(["FMaxMonth",   theday.month.to_s]))
         search_keys.push(Array.new(["FMaxDay",     theday.day.to_s]))
-        
         set_options(form, search_keys)
         
+        # 検索実行
         form.submit
         
+        # 検索結果のスケジュール一覧を配列に格納
         arr = RetrieveList("table.DefT", method(:proc_split_table_to_array))
         if (arr[1].length == 1)
             # this means no data.
             arr.delete_at(1)
         end
+        # ヘッダー除去
         arr.delete_at(0)
         
         return arr
     end
     
-    def GetEventsForWeek()
-        
-        i = 0
-        d = Date.today()
-        
+    # 指定された期間のスケジュールを配列で返す
+    def GetEvents(start_date, end_date)
+       
+        d = start_date
         arr = Array.new()
-        while (i < 7)
-            arr.concat(GetEventsforDay(d + i))
-            i = i + 1
+         
+        while (d <= end_date) do
+            arr.concat(GetEventsforDay(d))
+            d = d + 1
         end
         
         return arr
-    
     end
     
-    def GetEventDetail(event)
-        
-        url = event[3]
-        
-        Go("/cgi-bin/" + url)
-        
-        doc = Nokogiri::HTML.parse(@agent.page.body)
-        if (doc == nil)
-            raise "Document Body not found."
-        end
-        
-        rows = doc.css("td.DefT")
-        if (rows == nil || rows.size == 0)
-            raise "Data Table Row not found."
-        end
-        
-        detail = Array.new()
-        rows.each { |r|
-            detail.push(r.inner_text.strip)
-        }
-        
-        p detail if @use_debug == 1
-        
-        t = split_event_time(detail[5])
-        event.push(t[0])
-        event.push(t[1])
-        event.push(shrink_place(detail[12]))
-        s = url.index("&tskno=") + "&tskno=".length
-        e = url.index("&sday=")
-        event.push(url[s, e - s])
-        
+    # この先一週間のスケジュールを配列で返す
+    def GetEventsForWeek()
+        d = Date.today()
+        return GetEvents(d, d + 7)    
     end
+    
+    # この先1か月のスケジュールを配列で返す
+    def GetEventsForMonth()
+        d = Date.today()
+        return GetEvents(d, d + 31)    
+    end
+
+    
+    def GetEventDetail(event, mode = MODE_NORMAL)
+        
+        begin
+            # スケジュールの詳細をハッシュで取得
+            detail = get_schedule_detail(event)
+        
+            # 開始日時終了日時を開始日、開始時刻、終了日、終了時刻に分離
+            eco_date = detail.fetch("予定日時", detail["予定期間"])
+            t = split_event_time(eco_date, mode)
+        
+            case mode
+            when MODE_NORMAL
+                # GAS用配列にセット
+                arr = Array.new(GOCCSV_MAX)
+                arr[GOCCSV_TITLE] = detail["予定"]
+                arr[GOCCSV_BEGIN_UNIXTIME]  = t[0]
+                arr[GOCCSV_END_UNIXTIME]    = t[1]
+                arr[GOCCSV_FACILITY] = shrink_place(detail["設備"])
+                arr[GOCCSV_OPTION] = @base_url + "/cgi-bin/" + event[ECOLIST_URL]
+            when MODE_GAROON            
+                # GAROON用配列にセット
+                arr = Array.new(GARCSV_SCHEDULE_MEMO)
+                arr[GARCSV_STARTDATE] = t[0]
+                arr[GARCSV_STARTTIME] = t[2]
+                arr[GARCSV_STOPDATE] = t[1]
+                arr[GARCSV_STOPTIME] = t[3]
+                arr[GARCSV_SCHEDULE_MENU]   = ""  #should be empty.
+                arr[GARCSV_SCHEDUEL_TITLE]  = detail["予定"]
+                arr[GARCSV_SCHEDULE_MEMO]   = @base_url + "/cgi-bin/" + event[ECOLIST_URL]
+            end
+            
+        rescue => e
+            p detail
+            raise e
+        end
+        
+        return arr
+    end
+    
 end
 
-class CWebAppGoogle
+class CWebAppGoogle < CWebApp
 
     attr_reader :app_name, :session
-    attr_accessor :debug
 
-    def initialize(app_name)
+    def initialize(app_name, dbg = 0)
+        super("https://docs.google.com/forms", dbg)
         @app_name = app_name
     end
     
@@ -458,6 +630,8 @@ class CWebAppGoogle
         end
     end
 
+    # UNDER CONSTRUCTION
+    # this method does nothing with script files
     def GetFile(src, dst)
         srcfile = @session.file_by_title(src)
         if (srcfile == nil)
@@ -465,8 +639,26 @@ class CWebAppGoogle
         end
         srcfile.download_to_file(dst)
     end
+    
+    def Kick_(path, ball)
+        Go(path)
+        SetFormFirstField("ss-form", ball)
+        Execute("ss-form")
+    end
 
 end
 
+
+class CWebAppGaroon < CWebApp
+    
+    def initialize(b_url, dbg = 0)
+        super(b_url, dbg)
+    end
+    
+    def CreateEvent(event_info)
+        
+    end
+    
+end
 
 

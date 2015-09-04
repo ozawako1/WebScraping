@@ -23,30 +23,30 @@ end
 use_proxy = 0
 use_debug = 0
 use_dump  = 0
+get_month = 0
 
 ARGV.each { |arg|
     case arg
         when "PROXY"
-        use_proxy = 1
+            use_proxy = 1
         when "DEBUG"
-        use_debug = 1
+            use_debug = 1
         when "DUMP"
-        use_dump = 1
+            use_dump = 1
+        when "MONTH"
+            get_month = 1
         else
         puts("undefined arg. [" + arg + "]")
     end
 }
 
-agent = Mechanize.new
-agent.user_agent = "My User Agent"
-# agent.set_proxy("10.0.2.58", 8080) if use_proxy == 1
 
 id = get_config("Eco","UserID")
 pd = get_config("Eco","password")
 login_info = Hash["UserID"=>id, "password"=>pd, "login"=>"1", "grsel"=>"-1"]
 path = get_config("Eco", "Url")
 
-site = CWebAppEco.new(agent, "http://192.168.103.149/LspEco", use_debug)
+site = CWebAppEco.new("http://192.168.103.149/LspEco", use_debug)
 if site == nil
     puts("Init Error.")
     exit
@@ -59,39 +59,34 @@ if google == nil
 end
 
 begin
+    puts("Log in Eco ...")
     site.Login("/cgi-bin/Eco.cgi", "loginf", login_info)
     p site.GetPage() if use_dump == 1
     
-    site.Go("/cgi-bin/BSCD.cgi")
+    puts("Getting Schedule from Eco ...")
+    if get_month == 1 then
+        events = site.GetEventsForMonth()
+    else
+        events = site.GetEventsForWeek()
+    end
     p site.GetPage() if use_dump == 1
+    p events if use_debug == 1    
     
-    events = site.GetEventsForWeek()
-    
-    p site.GetPage() if use_dump == 1
-    p events if use_debug == 1
-    
+    puts("Getting Schedule detail from Eco ...")
+    arr = Array.new
     events.each { | ev |
-        site.GetEventDetail(ev)
+        arr.push(site.GetEventDetail(ev))
     }
     
-    compress(events)
-    
+    puts("Log in Google ...")
     google.Login()
     
-    google.WriteArray(events)
+    puts("Upload schedule to Google ...")
+    google.WriteArray(arr)
     
-    kick = CWebApp.new(agent, "https://docs.google.com/forms", use_debug)
-    if (kick ==nil)
-        puts("Google Init Error.")
-        exit
-    end
-    
-    kick.Go(path)
-    
-    kick.SetForm("ss-form", [["entry.1934995328","ss2cal"]])
-    
-    kick.Execute("ss-form")
-
+    puts("Update Google Calendar ...")
+    google.Kick_(path, "ss2cal") 
+        
     puts("Success." + Time.now.strftime("%Y/%m/%d %H:%M:%S"))
     
 rescue => e
