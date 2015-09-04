@@ -49,7 +49,7 @@ begin
 			note: jdata["contact"],
 			billable: true
 			)
-		puts("creating project ["+ proj.name + "]...")
+		puts("creating project [" + proj.name + "]...")
 		project = hv.projects.create(proj)
 	
 		tasks.each do |t|
@@ -64,7 +64,9 @@ begin
 		end
 
 		File.rename(f, jsonpath + "done/" + File.basename(f))
-
+		
+		puts("[" + proj.code  + "] created.")
+		
 	end
 	
 		
