@@ -11,8 +11,9 @@ require_relative "proc"
 
 HARVEST_FILTER_FORM = "expense_report_filter_form"
 HARVEST_FILTER_TYPE_DEPT = "departments"
-HARVEST_PAGE_LOGIN = "/account/login"
-HARVEST_FORM_LOGIN = "signin_form"
+# HARVEST_PAGE_LOGIN = "/account/login"
+# HARVEST_FORM_LOGIN = "signin_form"
+HARVEST_PAGE_LOGIN = "https://id.getharvest.com/harvest/sign_in"
 
 
 AMOEBA_PAGE_LOGIN = "/"
@@ -86,7 +87,11 @@ class CWebApp
     
 	def Login(page_login, f_login, info_login)
         
-		l_page = @base_url + page_login
+        l_page = ""
+        if (page_login.match(/^http/) == nil) 
+            l_page = @base_url
+        end
+		l_page += page_login
 		
         p ("Login: " + l_page)          if @debug == 1
         p ("Form : " + f_login)         if @debug == 1
@@ -318,14 +323,14 @@ class CWebAppAmoeba < CWebApp
         self.Go(jump_url%[menu_id, menu_id])
     end
     
-    def GetWorkHoursByEmpCode(emp_code)
+    def GetWorkHoursByEmpCode(yyyy, mm, emp_code)
         work_hours_page = "/Main?referer=/teams/KTO/PKTO331%%2Fsearchlist.jsp" +
                           "&prepage=/sharemenu.jsp&menuID=PKTO331&forward=searchlist.jsp" +
                           "&service=jp.co.kccs.greenearth.erp.kto.pkto331.PersonalCalendarService" +
                           "&actionbean=GetList&mode=search&listsize=-1&no_header=" +
                           "&Objective_DT_P=%d/%02d&Time_CL_1=1&Stuff_No_0=%s&Name="
         
-        self.Go(work_hours_page%[Time.now.year, Time.now.month, emp_code])
+        self.Go(work_hours_page%[yyyy, mm, emp_code])
     
         itm = self.GetItem("#TTL_Fixed_Time_lbl")
         hours = itm[1].text.strip
@@ -596,8 +601,7 @@ class CWebAppGoogle < CWebApp
         auth.client_id      = get_config(@app_name, "client_id")
         auth.client_secret  = get_config(@app_name, "client_secret")
         auth.refresh_token  = get_config(@app_name, "refresh_token")
-        auth.scope = "https://www.googleapis.com/auth/drive" + " " +
-                    "https://spreadsheets.google.com/feeds/"
+        auth.scope = "https://www.googleapis.com/auth/drive.file"
         auth.fetch_access_token!
         
         # Creates a session.

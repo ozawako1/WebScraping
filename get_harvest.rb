@@ -5,7 +5,7 @@ require_relative "CWebApp"
 require_relative "util"
 
 
-def get_harvest_hours(harvest_webapp, user_hours_file)
+def get_harvest_hours(harvest_webapp, yyyy, mm, user_hours_file)
 
     dataTableRow = "tr.dt-group"
 
@@ -15,12 +15,12 @@ def get_harvest_hours(harvest_webapp, user_hours_file)
     site = harvest_webapp
 
     #Amoeba上の第一稼働日を取得
-    a_first_day = get_day_number_of_year(get_first_day_of_amoebamonth())
-
-    #前日
-    yesterday = get_day_number_of_year(Date.today() - 1)
-    thisyear = Time.now.year
-
+    a_first_day = get_day_number_of_year(get_first_day_of_amoebamonth(yyyy, mm))
+    
+    #Amoeba上の最終稼働日を取得
+    a_end_day = get_day_number_of_year(get_last_day_of_amoebamonth(yyyy, mm))
+    
+    t_year = yyyy ? yyyy : Time.now.year
     begin
 
         table = CSV.read(csvpath + usermst)
@@ -28,7 +28,7 @@ def get_harvest_hours(harvest_webapp, user_hours_file)
         table.each do | ucode |
             
             url = sprintf("/reports/detailed/%d/%d/%d/%d/%s/any/any/ign/ign/ign/any?group=users",
-                          a_first_day, thisyear, yesterday, thisyear, ucode[1])
+                          a_first_day, t_year, a_end_day, t_year, ucode[1])
             
             site.Go(url)
             

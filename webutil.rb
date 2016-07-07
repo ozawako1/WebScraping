@@ -22,7 +22,11 @@ def search_object(object_type, parent, name)
     
     case object_type
         when OT_FORM
-            o1 = parent.form_with(:name => name)
+            if (name == "")
+                o1 = parent.forms[0]
+            else
+                o1 = parent.form_with(:name => name)
+            end
             o2 = parent.form_with(:id   => name)
         when OT_FIELD
             o1 = parent.field_with(:name => name)

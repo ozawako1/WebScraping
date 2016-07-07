@@ -3,7 +3,7 @@
 
 require_relative "CWebApp"
 
-def get_amoeba_hours(amoeba_webapp, user_hours_file)
+def get_amoeba_hours(amoeba_webapp, yyyy, mm, user_hours_file)
     
     site = amoeba_webapp
 
@@ -12,9 +12,11 @@ def get_amoeba_hours(amoeba_webapp, user_hours_file)
 
         table.each do | rows |
             
-            amoeba_hours = site.GetWorkHoursByEmpCode(rows[0])
+            amoeba_hours = site.GetWorkHoursByEmpCode(yyyy, mm, rows[0])
             
             rows << amoeba_hours
+            
+            rows << yyyy.to_s + "年" + mm.to_s + "月"
 
         end
 

@@ -60,10 +60,50 @@ def get_first_day_of_week()
     return Date.new(Time.now.year, Time.now.month, Time.now.day - Time.now.wday + 1)
 end
 
-def get_first_day_of_amoebamonth()
+def get_last_day_of_amoebamonth(yyyy = 0, mm = 0)
+
+    if (yyyy == 0) then
+        yyyy = Time.now.year
+    end
+    if (mm == 0) then
+        mm = Time.now.month
+    end
+    
+    if (mm == 12) then
+        next_mm = 1
+        next_yyyy = yyyy + 1
+    else
+        next_mm = mm + 1
+        next_yyyy = yyyy
+    end
 
     # get the last day of last month
-    d = Date.new(Time.now.year, Time.now.month, 1)
+    d = Date.new(next_yyyy, next_mm, 1)
+    d = d - 2
+    
+    # check if it was work day
+    # if not rewind 1 day
+    while (true) do
+        if (1 < d.wday && d.wday < 6)
+            break
+        end
+        d = d - 1
+    end
+    
+    return d    
+end
+
+def get_first_day_of_amoebamonth(yyyy = 0, mm = 0)
+
+    if (yyyy == 0) then
+        yyyy = Time.now.year
+    end
+    if (mm == 0) then
+        mm = Time.now.month
+    end
+
+    # get the last day of last month
+    d = Date.new(yyyy, mm, 1)
     d = d - 1
     
     # check if it was work day

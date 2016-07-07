@@ -16,7 +16,7 @@ require_relative "proc"
 # Email Address :
 # DepertmentCode : 8 digits text such as "27E50510"
 
-def get_harvest_users(harvest_webapp)
+def get_harvest_users(harvest_webapp, dbg = 0)
 
     member_page = "/people"
     pt = get_config("COMMON", "CSVPath")
@@ -31,15 +31,19 @@ def get_harvest_users(harvest_webapp)
         
         # save user list to csv
         data = site.RetrieveList("li.manage-list-item", method(:proc_split_list_to_array))
+
+        p data if dbg
         
         # append email and dept_code
         data.each do |member|
-            site.Go("/people/" + member[1] + "/edit#profile_base")
-            
-            member.push(site.GetItem("#user_email").attribute("value").value.strip);
-            
-            member.push(site.GetItem("#user_department").attribute("value").value.strip);
-            
+            if (member[0] != "Admin")
+                site.Go("/people/" + member[1] + "/edit#profile_base")
+                member.push(site.GetItem("#user_email").attribute("value").value.strip);
+                member.push(site.GetItem("#user_department").attribute("value").value.strip);
+            else
+                member.push("");
+                member.push("");
+            end
         end
         
         # sort by dept_code
@@ -49,6 +53,8 @@ def get_harvest_users(harvest_webapp)
         
         # flush to file
         flush_to_csv(sorted, pt + um)
+        
+        p (pt + um) if dbg
         
     rescue => e
 
