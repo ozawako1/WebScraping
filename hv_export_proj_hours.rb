@@ -33,7 +33,7 @@ Harvest::Project
  updated_at="2017-06-14T00:38:07Z"
 =end
 
-def export_project_hours(oHarvest, iDbg)
+def hv_export_project_hours(oHarvest, iDbg)
 
     projs = oHarvest.projects.all	
     repos = oHarvest.reports

@@ -22,7 +22,7 @@ Harvest::TimeEntry
  user_id=792156
 =end
 
-def export_user_hours(oHarvest, oStartDate, oEndDate, iDbg =0)
+def hv_export_user_hours(oHarvest, oStartDate, oEndDate, iDbg =0)
 
     users = oHarvest.users.all
     repos = oHarvest.reports

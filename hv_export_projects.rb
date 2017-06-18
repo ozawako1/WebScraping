@@ -34,7 +34,7 @@ Harvest::Project
 =end
 
 
-def export_projects(oHarverst, iDbg)
+def hv_export_projects(oHarverst, iDbg)
     
     projs = oHarverst.projects.all	
 
