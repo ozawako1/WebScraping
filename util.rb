@@ -60,6 +60,10 @@ def get_first_day_of_week()
     return Date.new(Time.now.year, Time.now.month, Time.now.day - Time.now.wday + 1)
 end
 
+def get_first_day_of_month()
+    return Date.new(Time.now.year, Time.now.month, 1)
+end
+
 def get_last_day_of_amoebamonth(yyyy = 0, mm = 0)
 
     if (yyyy == 0) then

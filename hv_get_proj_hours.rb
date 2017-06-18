@@ -12,7 +12,7 @@ require_relative "util"
 
 CLIENT_NAME = "Motex Inc."
 
-use_debug = 1
+use_debug = 0
 ARGV.each { |arg|
 	case arg
 	when "DEBUG"
@@ -59,31 +59,28 @@ begin
     summary = Array.new()
 
 	projs.each do |p|
-
         if (p.active == true) 
-        
             total = 0
-
-            timeentries = repos.time_by_project(p.id, Date.new(2017,6,1), Date.today)
+            timeentries = repos.time_by_project(p.id, get_first_day_of_month(), Date.today)
             timeentries.each do |t|
                 total += t.hours    
             end
-
-            p_summary = Array.new(2)
-            p_summary[0] = p.code
-            p_summary[1] = total
-            summary.push(p_summary)
-
+            if (total > 0) 
+                p_summary = Array.new(2)
+                p_summary[0] = p.code
+                p_summary[1] = total
+                summary.push(p_summary)
+            end
         end
-        
     end
 
-    file = file + "summary.csv"
+    summary = summary.sort { |x, y|
+        x[0] <=> y[0]
+    }
 
+    file = file + "summary.csv"
     flush_to_csv(summary, file)
-    p summary if use_debug
     	
-	
 		
 rescue => e
     p e
