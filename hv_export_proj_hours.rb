@@ -1,31 +1,9 @@
-# File: hv_get_proj_hours.rb
+# File: hv_export_proj_hours.rb
 # harvested API: http://www.rubydoc.info/github/zmoazeni/harvested
 
 
 require "harvested"
 require_relative "util"
-
-CLIENT_NAME = "Motex Inc."
-
-use_debug = 0
-ARGV.each { |arg|
-	case arg
-	when "DEBUG"
-		use_debug = 1
-	else
-		puts("undefined arg. [" + arg + "]")
-	end
-}
-
-subdomain = get_config("Harvest",	"SubDomain")
-username  = get_config("Harvest",	"ID")
-password  = get_config("Harvest",	"Password")
-file = get_config("COMMON",	"CSVPath")
-
-
-def pivot 
-    
-end
 
 =begin
 Harvest::Project 
@@ -55,12 +33,10 @@ Harvest::Project
  updated_at="2017-06-14T00:38:07Z"
 =end
 
-begin
-	# Login
-	hv = Harvest.hardy_client(subdomain: subdomain, username: username, password: password)		
-#    tasks = hv.tasks.all
-    projs = hv.projects.all	
-    repos = hv.reports
+def export_project_hours(oHarvest, iDbg)
+
+    projs = oHarvest.projects.all	
+    repos = oHarvest.reports
 
     # 当月の入力時間のみを取得する
     start_date = get_first_day_of_month()
@@ -69,7 +45,7 @@ begin
     summary = Array.new()
 
 	projs.each do |p|
-        if (p.active == true) 
+        if (p.active == true && p.code != "") 
 
             printf("Processing Project[%s] ...\n", p.code)
 
@@ -91,7 +67,7 @@ begin
         x[0] <=> y[0]
     }
 
-    file = file + "summary.csv"
+    file = get_config("COMMON",	"CSVPath") + get_config("Harvest", "ProjHourCsv")
     flush_to_csv(summary, file)
     	
 		

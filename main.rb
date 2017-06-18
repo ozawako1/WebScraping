@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
 
+require_relative "hv_export_proj_hours"
 require_relative "hv_export_user_hours"
 
 subdomain = get_config("Harvest",	"SubDomain")
@@ -12,6 +13,12 @@ use_debug = 0
 use_dump  = 0
 yyyy = 0
 mm = 0
+
+TEST_EXPORT_USER_HOURS = 0
+TEST_EXPORT_PROJ_HOURS = 1
+
+#TestMode = TEST_EXPORT_USER_HOURS
+TestMode = TEST_EXPORT_PROJ_HOURS
 
 ARGV.each { |arg|
     case arg
@@ -27,7 +34,14 @@ ARGV.each { |arg|
 begin
     hv = Harvest.hardy_client(subdomain: subdomain, username: username, password: password)	
     
-    export_user_hours_amoeba(hv, Time.now.year, Time.now.month, use_debug)
+
+    case TestMode
+    when TEST_EXPORT_USER_HOURS
+        export_user_hours_amoeba(hv, Time.now.year, Time.now.month, use_debug)
+    when TEST_EXPORT_PROJ_HOURS
+        export_project_hours(hv, use_debug)
+    end
+
 
 rescue => e
     p e
