@@ -70,6 +70,9 @@ begin
 
 	projs.each do |p|
         if (p.active == true) 
+
+            printf("Processing Project[%s] ...\n", p.code)
+
             total = 0
             timeentries = repos.time_by_project(p.id, start_date, end_date)
             timeentries.each do |t|

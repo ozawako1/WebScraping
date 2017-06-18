@@ -7,8 +7,9 @@
 		"SubDomain" : "...",
 		"ID"		: "...",
 		"Password"	: "...",
-		"UserMaster": "harvest_user_master.csv",
-        "MProjectList": "projectlist.csv"
+		"MUsers": "harvest_user_master.csv",
+        "ProjHourCsv": "projecthours.csv",
+		"UserHourCsv": "userhours.csv"
 	},
 	"Eco":{
 		"UserID"	: "...",

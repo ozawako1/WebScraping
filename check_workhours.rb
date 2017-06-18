@@ -11,7 +11,7 @@ COLUMN_CHECED_MONTH = 6
 
 require_relative "CWebApp"
 require_relative "util"
-require_relative "get_harvest_users"
+require_relative "hv_export_users"
 require_relative "get_harvest"
 require_relative "get_amoeba"
 
@@ -80,7 +80,7 @@ begin
 	puts("done.")
 
 	puts("checking HARVEST Users...")    
-    get_harvest_users(harvest, use_debug)
+    hv_export_users(harvest, use_debug)
 	puts("done.")
     
 	puts("checking HARVEST Hours...")    

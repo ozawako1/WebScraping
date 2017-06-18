@@ -20,7 +20,7 @@ def get_harvest_users(harvest_webapp, dbg = 0)
 
     member_page = "/team"
     pt = get_config("COMMON", "CSVPath")
-    um = get_config("Harvest", "UserMaster")
+    um = get_config("Harvest", "MUsers")
 
     site = harvest_webapp
 

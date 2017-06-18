@@ -10,7 +10,7 @@ def get_harvest_hours(harvest_webapp, yyyy, mm, user_hours_file)
     dataTableRow = "tr.dt-group"
 
     csvpath = get_config("COMMON", "CSVPath")
-    usermst = get_config("Harvest", "UserMaster")
+    usermst = get_config("Harvest", "MUsers")
     
     site = harvest_webapp
 

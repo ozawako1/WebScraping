@@ -18,11 +18,10 @@ ARGV.each { |arg|
 subdomain = get_config("Harvest",	"SubDomain")
 username  = get_config("Harvest",	"ID")
 password  = get_config("Harvest",	"Password")
-file = get_config("COMMON",	"CSVPath") + get_config("Harvest", "MProjectList")
+file = get_config("COMMON",	"CSVPath") + get_config("Harvest", "ProjHourCsv")
 
 
 
-=begin
 =begin
 Harvest::Project 
  active=true 
