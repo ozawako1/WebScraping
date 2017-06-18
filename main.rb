@@ -3,6 +3,7 @@
 
 require_relative "hv_export_proj_hours"
 require_relative "hv_export_user_hours"
+require_relative "hv_export_projects"
 
 subdomain = get_config("Harvest",	"SubDomain")
 username  = get_config("Harvest",	"ID")
@@ -16,9 +17,11 @@ mm = 0
 
 TEST_EXPORT_USER_HOURS = 0
 TEST_EXPORT_PROJ_HOURS = 1
+TEST_EXPORT_PROJ_MASTER = 3
 
 #TestMode = TEST_EXPORT_USER_HOURS
-TestMode = TEST_EXPORT_PROJ_HOURS
+#TestMode = TEST_EXPORT_PROJ_HOURS
+TestMode = TEST_EXPORT_PROJ_MASTER
 
 ARGV.each { |arg|
     case arg
@@ -40,6 +43,8 @@ begin
         export_user_hours_amoeba(hv, Time.now.year, Time.now.month, use_debug)
     when TEST_EXPORT_PROJ_HOURS
         export_project_hours(hv, use_debug)
+    when TEST_EXPORT_PROJ_MASTER
+        export_projects(hv, use_debug)
     end
 
 

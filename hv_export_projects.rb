@@ -1,26 +1,9 @@
-# File: hv_export_projs.rb
+# File: hv_export_projects.rb
 # harvested API: http://www.rubydoc.info/github/zmoazeni/harvested
 
 
 require "harvested"
 require_relative "util"
-
-use_debug = 0
-ARGV.each { |arg|
-	case arg
-	when "DEBUG"
-		use_debug = 1
-	else
-		puts("undefined arg. [" + arg + "]")
-	end
-}
-
-subdomain = get_config("Harvest",	"SubDomain")
-username  = get_config("Harvest",	"ID")
-password  = get_config("Harvest",	"Password")
-file = get_config("COMMON",	"CSVPath") + get_config("Harvest", "ProjHourCsv")
-
-
 
 =begin
 Harvest::Project 
@@ -50,18 +33,16 @@ Harvest::Project
  updated_at="2017-06-14T00:38:07Z"
 =end
 
-begin
-	# Login
-	hv = Harvest.hardy_client(subdomain: subdomain, username: username, password: password)		
-#    tasks = hv.tasks.all
-    projs = hv.projects.all	
-    repos = hv.reports
+
+def export_projects(oHarverst, iDbg)
+    
+    projs = oHarverst.projects.all	
 
     summary = Array.new()
 
 	projs.each do |p|
 
-        if (p.active == true) 
+        if (p.active == true && p.code != "") 
             p_proj = Array.new(3)
 
             p_proj[0] = p.id
@@ -76,13 +57,9 @@ begin
         x[1] <=> y[1]
     }
 
+    file = get_config("COMMON",	"CSVPath") + get_config("Harvest", "MProjs")
     flush_to_csv(summary, file, true)
     	
-		
-rescue => e
-    p e
-    p e.backtrace
-    p Time.now
 
 end
 
