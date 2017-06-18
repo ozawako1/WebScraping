@@ -1,11 +1,4 @@
 # File: project_create_script.rb
-# Date Created: 2012-10-08
-# Author(s): Mark Rickert (mjar81@gmail.com) / Skookum Digital Works - http://skookum.com
-#
-# Description: This example script takes user input from the command line and
-# creates a project based the selected options. It then assigns tasks from Harvest
-# to the project based on an array. After the tasks are added, it addes all the
-# currently active users to the project.
 
 require "harvested"
 require_relative "util"
@@ -56,12 +49,16 @@ begin
     projs = hv.projects.all	
     repos = hv.reports
 
+    # 当月の入力時間のみを取得する
+    start_date = get_first_day_of_month()
+    end_date = Date.today
+
     summary = Array.new()
 
 	projs.each do |p|
         if (p.active == true) 
             total = 0
-            timeentries = repos.time_by_project(p.id, get_first_day_of_month(), Date.today)
+            timeentries = repos.time_by_project(p.id, start_date, end_date)
             timeentries.each do |t|
                 total += t.hours    
             end
