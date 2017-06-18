@@ -1,11 +1,9 @@
-# File: hv_get_proj_hours.rb
+# File: hv_export_projs.rb
 # harvested API: http://www.rubydoc.info/github/zmoazeni/harvested
 
 
 require "harvested"
 require_relative "util"
-
-CLIENT_NAME = "Motex Inc."
 
 use_debug = 0
 ARGV.each { |arg|
@@ -20,13 +18,11 @@ ARGV.each { |arg|
 subdomain = get_config("Harvest",	"SubDomain")
 username  = get_config("Harvest",	"ID")
 password  = get_config("Harvest",	"Password")
-file = get_config("COMMON",	"CSVPath")
+file = get_config("COMMON",	"CSVPath") + get_config("Harvest", "MProjectList")
 
 
-def pivot 
-    
-end
 
+=begin
 =begin
 Harvest::Project 
  active=true 
@@ -62,34 +58,26 @@ begin
     projs = hv.projects.all	
     repos = hv.reports
 
-    # 当月の入力時間のみを取得する
-    start_date = get_first_day_of_month()
-    end_date = Date.today
-
     summary = Array.new()
 
 	projs.each do |p|
+
         if (p.active == true) 
-            total = 0
-            timeentries = repos.time_by_project(p.id, start_date, end_date)
-            timeentries.each do |t|
-                total += t.hours    
-            end
-            if (total > 0) 
-                p_summary = Array.new(2)
-                p_summary[0] = p.code
-                p_summary[1] = total
-                summary.push(p_summary)
-            end
+            p_proj = Array.new(3)
+
+            p_proj[0] = p.id
+            p_proj[1] = p.code
+            p_proj[2] = p.name
+            
+            summary.push(p_proj)
         end
     end
 
     summary = summary.sort { |x, y|
-        x[0] <=> y[0]
+        x[1] <=> y[1]
     }
 
-    file = file + "summary.csv"
-    flush_to_csv(summary, file)
+    flush_to_csv(summary, file, true)
     	
 		
 rescue => e

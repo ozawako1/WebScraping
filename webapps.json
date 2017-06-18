@@ -4,9 +4,11 @@
 		"UserHours"	: "user_hours.csv"
 	},
 	"Harvest":{
+		"SubDomain" : "...",
 		"ID"		: "...",
 		"Password"	: "...",
-		"UserMaster": "harvest_user_master.csv"
+		"UserMaster": "harvest_user_master.csv",
+        "MProjectList": "projectlist.csv"
 	},
 	"Eco":{
 		"UserID"	: "...",

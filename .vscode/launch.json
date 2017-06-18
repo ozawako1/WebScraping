@@ -6,7 +6,7 @@
             "type": "Ruby",
             "request": "launch",
             "cwd": "${workspaceRoot}",
-            "program": "${workspaceRoot}/hv_get_proj_hours.rb"
+            "program": "${workspaceRoot}/hv_export_projs.rb"
         },
         {
             "name": "Listen for rdebug-ide",
