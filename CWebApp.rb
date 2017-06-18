@@ -2,8 +2,8 @@ require "mechanize"
 require "nokogiri"
 
 require "rubygems"
-require "google/api_client"
-require "google_drive"
+#require "google/api_client"
+#require "google_drive"
 
 require_relative "util"
 require_relative "webutil"
@@ -166,13 +166,13 @@ class CWebApp
         
         return itm
     end
-    
+
     def Table2Array(css_searchkey, order = 0)
         
         doc = ParsePage()
         
         # Tableを探す        
-        elts = doc.css(css_searchkey)
+        elts = GetItem(css_searchkey)
         if is_empty(elts) then
             raise "Table not found."
         end
@@ -439,152 +439,7 @@ class CWebAppAmoeba < CWebApp
     
 end
 
-class CWebAppEco < CWebApp
-    
-    def initialize(b_url, dbg = 0)
-        super(b_url, dbg)
-        @agent.follow_meta_refresh = true
-        @encoding = "CP932" #for shimazaki-san, kawasaki-san
-    end
-    
-    # スケジュール検索ページへ移動
-    def jump_to_searchpage()
-        path = @agent.page.uri.path
-        if (path != ECO_SEARCH_PAGE) then
-            self.Go(ECO_SEARCH_PAGE)
-        end
-    end
-    
-    # スケジュールの詳細を配列で取得
-    def get_schedule_detail(event)
-        
-        # スケジュール詳細ページへ
-        self.Go("/cgi-bin/" + event[ECOLIST_URL])
-        doc = self.ParsePage()
-        if (doc == nil)
-            raise "Document Body not found."
-        end
-        
-        # スケジュール詳細ページの項目値を配列に
-        csskey = 'table[width="100%"][border="0"][cellpadding="1"][cellspacing="2"]'
-        detail = Table2Array(csskey, 1)
-        # 見出し行を削除
-        detail.delete_at(0) 
-        
-        # 配列からHashに。
-        detail = Hash[*detail.flatten]
-        p detail if @debug == 1
-        
-        return detail      
-    end
-        
-    # 指定日のスケジュール一覧を取得
-    def GetEventsforDay(theday)
-    
-        # 検索ページに移動
-        jump_to_searchpage()
-        
-        form = search_form(@agent.page, "tskfil")
-        if (form == nil)
-            raise "Form Not Found. [tskfil]"
-        end
-        
-        # 検索条件1:「予定」と「結果」両方を含む
-        form.field_with(:name => "fRstType").value = "0"
-        
-        # 検索条件2: 日付範囲を指定するドロップダウンリストをセット
-        search_keys = Array.new()
-        search_keys.push(Array.new(["FMinYear",    theday.year.to_s]))
-        search_keys.push(Array.new(["FMinMonth",   theday.month.to_s]))
-        search_keys.push(Array.new(["FMinDay",     theday.day.to_s]))
-        search_keys.push(Array.new(["FMaxYear",    theday.year.to_s]))
-        search_keys.push(Array.new(["FMaxMonth",   theday.month.to_s]))
-        search_keys.push(Array.new(["FMaxDay",     theday.day.to_s]))
-        set_options(form, search_keys)
-        
-        # 検索実行
-        form.submit
-        
-        # 検索結果のスケジュール一覧を配列に格納
-        arr = RetrieveList("table.DefT", method(:proc_split_table_to_array))
-        if (arr[1].length == 1)
-            # this means no data.
-            arr.delete_at(1)
-        end
-        # ヘッダー除去
-        arr.delete_at(0)
-        
-        return arr
-    end
-    
-    # 指定された期間のスケジュールを配列で返す
-    def GetEvents(start_date, end_date)
-       
-        d = start_date
-        arr = Array.new()
-         
-        while (d <= end_date) do
-            arr.concat(GetEventsforDay(d))
-            d = d + 1
-        end
-        
-        return arr
-    end
-    
-    # この先一週間のスケジュールを配列で返す
-    def GetEventsForWeek()
-        d = Date.today()
-        return GetEvents(d, d + 7)    
-    end
-    
-    # この先1か月のスケジュールを配列で返す
-    def GetEventsForMonth()
-        d = Date.today()
-        return GetEvents(d, d + 31)    
-    end
-
-    
-    def GetEventDetail(event, mode = MODE_NORMAL)
-        
-        begin
-            # スケジュールの詳細をハッシュで取得
-            detail = get_schedule_detail(event)
-        
-            # 開始日時終了日時を開始日、開始時刻、終了日、終了時刻に分離
-            eco_date = detail.fetch("予定日時", detail["予定期間"])
-            t = split_event_time(eco_date, mode)
-        
-            case mode
-            when MODE_NORMAL
-                # GAS用配列にセット
-                arr = Array.new(GOCCSV_MAX)
-                arr[GOCCSV_TITLE] = detail["予定"]
-                arr[GOCCSV_BEGIN_UNIXTIME]  = t[0]
-                arr[GOCCSV_END_UNIXTIME]    = t[1]
-                arr[GOCCSV_FACILITY] = shrink_place(detail["設備"])
-                arr[GOCCSV_OPTION] = @base_url + "/cgi-bin/" + event[ECOLIST_URL]
-            when MODE_GAROON            
-                # GAROON用配列にセット
-                arr = Array.new(GARCSV_SCHEDULE_MEMO)
-                arr[GARCSV_STARTDATE] = t[0]
-                arr[GARCSV_STARTTIME] = t[2]
-                arr[GARCSV_STOPDATE] = t[1]
-                arr[GARCSV_STOPTIME] = t[3]
-                arr[GARCSV_SCHEDULE_MENU]   = ""  #should be empty.
-                arr[GARCSV_SCHEDUEL_TITLE]  = detail["予定"]
-                arr[GARCSV_SCHEDULE_MEMO]   = @base_url + "/cgi-bin/" + event[ECOLIST_URL]
-            end
-            
-        rescue => e
-            p detail
-            raise e
-        end
-        
-        return arr
-    end
-    
-end
-
+=begin
 class CWebAppGoogle < CWebApp
 
     attr_reader :app_name, :session
@@ -651,7 +506,7 @@ class CWebAppGoogle < CWebApp
     end
 
 end
-
+=end
 
 class CWebAppGaroon < CWebApp
     

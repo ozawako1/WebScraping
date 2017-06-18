@@ -20,12 +20,13 @@ end
 
 
 def proc_split_table_to_array(table, arr)
-    
+=begin    
     chk = table.attribute("cellpadding")
     if ( chk == nil || chk.value != "1" )
         return
     end
-    
+=end
+
     line = table.css("tr")
     if (line == nil || line.size == 0)
         raise "Table has no contents."
