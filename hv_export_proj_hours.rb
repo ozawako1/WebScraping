@@ -38,10 +38,6 @@ def hv_export_project_hours(oHarvest, iDbg)
     projs = oHarvest.projects.all	
     repos = oHarvest.reports
 
-    # 当月の入力時間のみを取得する
-    start_date = get_first_day_of_month()
-    end_date = Date.today
-
     summary = Array.new()
 
 	projs.each do |p|
@@ -50,7 +46,12 @@ def hv_export_project_hours(oHarvest, iDbg)
             printf("Processing Project[%s] ...\n", p.code)
 
             total = 0
-            timeentries = repos.time_by_project(p.id, start_date, end_date)
+            
+            //Projectの作成日から１ヶ月過去に遡って集計する
+            startdate = Date.parse(p.created_at) << 1
+            enddate = Date.today
+
+            timeentries = repos.time_by_project(p.id, startdate, enddate)
             timeentries.each do |t|
                 total += t.hours    
             end

@@ -3,9 +3,10 @@
 
 require_relative "CWebApp"
 
-def get_amoeba_hours(amoeba_webapp, yyyy, mm, user_hours_file)
+def get_amoeba_hours(amoeba_webapp, yyyy, mm)
     
     site = amoeba_webapp
+    user_hours_file = get_config("COMMON", "CSVPath") + get_config("Harvest", "UserHourCsv")
 
     begin
         table = CSV.read(user_hours_file)

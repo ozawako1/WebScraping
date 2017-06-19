@@ -43,11 +43,12 @@ def hv_export_projects(oHarverst, iDbg)
 	projs.each do |p|
 
         if (p.active == true && p.code != "") 
-            p_proj = Array.new(3)
+            p_proj = Array.new(4)
 
             p_proj[0] = p.id
             p_proj[1] = p.code
             p_proj[2] = p.name
+            p_proj[3] = p.created_at
             
             summary.push(p_proj)
         end
