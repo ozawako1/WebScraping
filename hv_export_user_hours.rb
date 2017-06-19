@@ -59,7 +59,7 @@ def hv_export_user_hours(oHarvest, oStartDate, oEndDate, iDbg =0)
 end
 
 
-def export_user_hours_amoeba(oHarvest, yyyy, mm, iDbg)
+def hv_export_user_hours_amoeba(oHarvest, yyyy, mm, iDbg)
 
     #Amoeba上の第一稼働日を取得
     a_first_day = get_first_day_of_amoebamonth(yyyy, mm)
@@ -67,6 +67,6 @@ def export_user_hours_amoeba(oHarvest, yyyy, mm, iDbg)
     #Amoeba上の最終稼働日を取得
     a_end_day = get_last_day_of_amoebamonth(yyyy, mm)
 
-    export_user_hours(oHarvest, a_first_day, a_end_day, iDbg)
+    hv_export_user_hours(oHarvest, a_first_day, a_end_day, iDbg)
 
 end
