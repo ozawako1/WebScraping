@@ -58,6 +58,7 @@ Harvest::Project
 
 require "harvested"
 require_relative "util"
+#require_relative "o365_mail"
 
 CLIENT_NAME = "Motex Inc."
 
@@ -104,6 +105,7 @@ begin
 			bill_by: "Project"	
 			)
 		puts("creating project [" + proj.name + "]...")
+
 		project = hv.projects.create(proj)
 	
 		tasks.each do |t|
@@ -116,10 +118,12 @@ begin
 			user_assignment = Harvest::UserAssignment.new(user_id: u.id, project_id: project.id)
 			hv.user_assignments.create(user_assignment)
 		end
-
-		File.rename(f, jsonpath + "done/" + File.basename(f))
 		
 		puts("[" + proj.code  + "] created.")
+
+#		send_mail_with_pjcode(jdata["replyaddress"], jdata["ccaddress"], proj)
+		
+		File.rename(f, jsonpath + "done/" + File.basename(f))
 		
 	end
 	
