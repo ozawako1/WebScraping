@@ -149,8 +149,10 @@ def hv_export_project_hours(oHarvest, iDbg)
 
     file = get_config("COMMON",	"CSVPath") + get_config("Harvest", "ProjHourCsv")
     flush_to_csv(summary, file)
+
+
+    puts("Done.")
     	
-		
 rescue => e
     p e
     p e.backtrace
