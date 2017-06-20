@@ -1,4 +1,4 @@
-# File: project_create_script.rb
+# File: hv_create_proj.rb
 # Date Created: 2012-10-08
 # Author(s): Mark Rickert (mjar81@gmail.com) / Skookum Digital Works - http://skookum.com
 #
@@ -6,6 +6,55 @@
 # creates a project based the selected options. It then assigns tasks from Harvest
 # to the project based on an array. After the tasks are added, it addes all the
 # currently active users to the project.
+
+=begin
+{
+	"mailtype":"21",
+	"clientname":"栗田源喜",
+	"replyaddress":"genki.kurita@motex.co.jp",
+	"product":"LanScopeAn",
+	"version":"2.7.3.0",
+	"functionname":"Android O対応",
+	"targetyear":"2017",
+	"targetmonth":"10",
+	"supervision":"サービス運用課(27E71130)",
+	"amount":"\\3,000,000",
+	"contact":"Android O が 8 月 ～ 10月頃にリリースされる予定です。※時期未定\r\nAnで環境対応すべく、調査から行ってまいります。\r\nご承認のほど、宜しくお願い致します。",
+	"toaddress":["koichi.ozawa@motex.co.jp"],
+	"ccaddress":["akihito.nakano@motex.co.jp,yasutomo.sakondo@motex.co.jp,hiroshi.arinobu@motex.co.jp,tomoaki.hoshino@motex.co.jp"],
+	"code":"DA1706-005"
+}
+=end
+
+=begin
+Harvest::Project 
+ active=true 
+ bill_by="none" 
+ billable=true 
+ budget=nil 
+ budget_by="none" 
+ client_id=2558898 
+ code="DC1706-C03" 
+ cost_budget=nil 
+ cost_budget_include_expenses=false 
+ created_at="2017-06-14T00:38:07Z" 
+ ends_on=nil
+ estimate=nil 
+ estimate_by="none" 
+ hint_earliest_record_at=nil 
+ hint_latest_record_at=nil 
+ hourly_rate=nil 
+ id=14200342 
+ name="..." 
+ notes="" 
+ notify_when_over_budget=false 
+ over_budget_notification_percentage=80.0 
+ over_budget_notified_at=nil 
+ show_budget_to_all=false 
+ starts_on=nil 
+ updated_at="2017-06-14T00:38:07Z"
+=end
+
 
 require "harvested"
 require_relative "util"
@@ -25,7 +74,7 @@ ARGV.each { |arg|
 subdomain = get_config("Harvest",	"SubDomain")
 username  = get_config("Harvest",	"ID")
 password  = get_config("Harvest",	"Password")
-jsonpath  = get_config("COMMON",	"CSVPath")
+jsonpath  = get_config("Harvest",	"JsonPath")
 
 begin
 	# Login
@@ -46,8 +95,13 @@ begin
 			client_id: client.id,
 			name: jdata["functionname"], 
 			code: jdata["code"],
-			note: jdata["contact"],
-			billable: true
+			note: jdata["supervision"] + " / " + jdata["contact"],
+			billable: true,
+			hourly_rate: 5000,
+			budget_by: "project_cost",
+            estimate_by: "project_cost",
+            cost_budget: jdata["amount"].scan(/[0-9]/).to_s,
+			bill_by: "Project"	
 			)
 		puts("creating project [" + proj.name + "]...")
 		project = hv.projects.create(proj)

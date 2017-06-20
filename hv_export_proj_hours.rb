@@ -47,7 +47,7 @@ def hv_export_project_hours(oHarvest, iDbg)
 
             total = 0
             
-            //Projectの作成日から１ヶ月過去に遡って集計する
+            #Projectの作成日から１ヶ月過去に遡って集計する
             startdate = Date.parse(p.created_at) << 1
             enddate = Date.today
 

@@ -299,14 +299,43 @@ private
     end
 end
 
-class CWebAppHarvest < CWebApp
-    def GetTotalHours()
-        
-        hours = self.GetItem("div.ds-amt")
-        val = hours[1].text
-        pos = val.index("Hours")
-     
-        return (pos != nil) ? val[0, pos].strip : "0"
+class CWebAppHarvest
+  	attr_reader :subdomain, :loginid, :password, :handle
+ 
+    def initialize()
+        @subdomain  = get_config("Harvest", "SubDomain")
+        @username   = get_config("Harvest", "ID")
+        @password   = get_config("Harvest", "Password")
+    end
+
+    def Login()
+        @handle   = Harvest.hardy_client(subdomain: @subdomain, username: @username, password: @password)	
+    end
+
+    def ExportUser2File(ExportFile)
+
+    	users = @handle.users.all
+        summary = Array.new()
+
+        users.each do |u|
+            if (u.is_active == true && u.is_admin == false)
+                p_user = Array.new(5)
+                p_user[0] = u.first_name
+                p_user[1] = u.id
+                p_user[2] = u.email
+                p_user[3] = u.department
+                p_user[4] = u.last_name
+                
+                summary.push(p_user)
+            end
+        end
+
+        summary = summary.sort { |x, y|
+            x[0] <=> y[0]
+        }
+
+        flush_to_csv(summary, ExportFile, true)
+
     end
 end
 

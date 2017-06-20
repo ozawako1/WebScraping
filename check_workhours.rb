@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
+# check_workhours.rb
 
 COLUMN_AMOEBA_UID = 0
 COLUMN_HARVEST_UID = 1
@@ -50,16 +51,6 @@ end
 
 puts("checking [" + yyyy.to_s + "/" + mm.to_s + "]")
 
-=begin
-hid = get_config("Harvest", "ID")
-hpd = get_config("Harvest", "Password")
-hLogin = Hash["email"=>hid, "password"=>hpd]
-harvest = CWebAppHarvest.new("https://motex.harvestapp.com", use_debug)
-if harvest == nil
-    puts("Init Error.")
-end
-=end
-
 acd = get_config("Amoeba","CompanyCode")
 aid = get_config("Amoeba","ID")
 apd = get_config("Amoeba","Password")
@@ -76,26 +67,18 @@ if google == nil
 end
 =end
 
-#usrhrs = get_config("COMMON", "CSVPath") + get_config("COMMON", "UserHours")
-
 begin
-=begin
-	puts("going to login HARVEST...")    
-    harvest.Login(HARVEST_PAGE_LOGIN, "", hLogin)
-	puts("done.")
-=end
 
-    subdomain = get_config("Harvest",	"SubDomain")
-    username  = get_config("Harvest",	"ID")
-    password  = get_config("Harvest",	"Password")
-    hv = Harvest.hardy_client(subdomain: subdomain, username: username, password: password)	
+    hv = CWebAppHarvest.new()
+    hv.Login()
 
-	puts("checking HARVEST Users...")    
-    hv_export_users(hv, use_debug)
+	puts("checking HARVEST Users...")
+    file = get_config("COMMON",	"CSVPath") + get_config("Harvest", "MUsers")
+    hv.ExportUser2File(file)
 	puts("done.")
     
 	puts("checking HARVEST Hours...")    
-    hv_export_user_hours_amoeba(hv, yyyy, mm, use_debug)
+    hv_export_user_hours_amoeba(hv.handle, yyyy, mm, use_debug)
 	puts("done.")
     
 	puts("going to login AMOEBA...")    
