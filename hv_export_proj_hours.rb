@@ -11,6 +11,8 @@ CSV_COL_PJH_TASKHOUR    = 2
 CSV_COL_PJH_PROJECTHOUR = 3
 CSV_COL_PJH_MAX         = 4
 
+TASK_CODE_DIGITS = 2
+
 =begin
 Harvest::Project 
  active=true 
@@ -57,7 +59,7 @@ def hv_get_task_code(arr, taskid)
     ret = ""
     arr.each do |a|
         if( a.id == taskid.to_i )
-            ret = a.name[1,2]
+            ret = a.name[1,TASK_CODE_DIGITS]
             break
         end
     end
@@ -102,7 +104,6 @@ def hv_export_project_hours(oHarvest, iDbg)
     summary = Array.new()
 
 	projs.each do |p|
-#        if (p.active == true && p.code == "W1503-015") 
         if (p.active == true && p.code != "") 
 
             printf("Processing Project[%s] ...\n", p.code)
