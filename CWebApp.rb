@@ -312,7 +312,7 @@ class CWebAppHarvest
         @handle   = Harvest.hardy_client(subdomain: @subdomain, username: @username, password: @password)	
     end
 
-    def ExportUser2File(ExportFile)
+    def ExportUser2File(export_file)
 
     	users = @handle.users.all
         summary = Array.new()
@@ -334,7 +334,7 @@ class CWebAppHarvest
             x[0] <=> y[0]
         }
 
-        flush_to_csv(summary, ExportFile, true)
+        flush_to_csv(summary, export_file, true)
 
     end
 end
@@ -548,5 +548,132 @@ class CWebAppGaroon < CWebApp
     end
     
 end
+
+
+class CWebAppChatwork < CWebApp
+    attr_reader :token, :cli
+
+    def initialize(b_url, dbg = 0)
+        
+        @token = get_config("chatwork", "APIToken")
+
+#        uri = URI.parse('https://api.chatwork.com/v2')
+        uri = URI.parse(b_url)
+        @cli = Net::HTTP.new(uri.host, 443)
+        @cli.use_ssl = true
+
+        super(b_url, dbg)
+
+    end
+
+    def find_room(room_name)
+        
+        ret = ""
+
+        # チャットの情報一覧を取得してお目当てのroomIDを探す
+        res = @cli.get('/v2/rooms', {'X-ChatWorkToken' => @token})
+        if (res.code != "200") 
+            raise "Error. get rooms error." + res.code
+        end
+
+        jarr = JSON.parse(res.body)
+
+        puts jarr if @debug == 1
+
+        jarr.each do |j|
+            if j["name"] == room_name
+                ret = j["room_id"]
+                break
+            end
+        end
+
+        return ret
+    end
+
+    def find_account( user_name )
+
+        ret = ""
+
+        res = @cli.get("/v2/contacts", {"X-ChatWorkToken" => @token})
+        if (res.code != "200") 
+            raise "Error. get contacts error." + res.code
+        end
+
+        jarr = JSON.parse(res.body)
+        puts jarr if @debug == 1
+
+        jarr.each do |j|
+            if j["name"] == user_name
+                ret = j["account_id"]
+                break
+            end
+        end
+
+
+        return ret
+
+    end
+
+    def chat_msg (room_name, msg)
+
+        room_id = find_room(room_name)
+
+        res = @cli.post("/v2/rooms/" + room_id.to_s + "/messages", "body="+URI.encode(msg), {'X-ChatWorkToken' => @token})
+        if (res.code != "200") 
+            raise "Error. post message error." + res.code
+        end
+
+        # 正常に投稿されるとメッセージIDが返る
+        ret = JSON.parse(res.body)
+
+        puts ret if @debug == 1
+
+    end
+
+    def chat_msg_to (room_name, to_user, msg)
+
+        begin
+
+            account_id = find_account(to_user)
+
+            body_msg = "[To:" + account_id + "] " + to_user + " さん\r\n" + msg
+
+            chat_msg(room_name, body_msg)
+
+        rescue => e
+            raise e
+        end
+
+    end
+
+    def flush_user_master()
+        #account_id, room_id, name, chatwork_id, organization_id, organization_name, department, avatar_image_url
+
+        res = @cli.get("/v2/contacts", {"X-ChatWorkToken" => @token})
+        if (res.code != "200") 
+            raise "Error. get contacts error." + res.code
+        end
+
+        csvfile = get_config("COMMON", "CSVPath") + get_config("chatwork", "UserMaster")
+
+        jarr = JSON.parse(res.body)
+        puts jarr if @debug == 1
+
+        header = 0
+
+        CSV.open(csvfile, "w", :force_quotes => true) do |writer|
+
+            jarr.each do |line|
+                writer << line.keys if header == 0
+                header = header + 1
+                writer << line.values
+            end
+        end
+    
+    end
+
+
+end
+
 
 

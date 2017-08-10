@@ -59,6 +59,7 @@ Harvest::Project
 require "harvested"
 require_relative "util"
 #require_relative "o365_mail"
+require_relative "cw_post"
 
 CLIENT_NAME = "Motex Inc."
 
@@ -120,11 +121,19 @@ begin
 		end
 		
 		puts("[" + proj.code  + "] created.")
-
-#		send_mail_with_pjcode(jdata["replyaddress"], jdata["ccaddress"], proj)
 		
 		File.rename(f, jsonpath + "done/" + File.basename(f))
-		
+
+		chatmsg = ""
+		chatmsg += jdata["clientname"] + " さん" + "\r\n"
+		chatmsg += "以下のプロジェクトコードを使用してください。" + "\r\n"
+		chatmsg += "\r\n"
+		chatmsg += "プロジェクト名: " + jdata["functioname"] + "\r\n"
+		chatmsg += "プロジェクトコード: " + jdata["code"]
+
+		cw_post_msg("システム連絡用", chatmsg)
+
+
 	end
 	
 		
