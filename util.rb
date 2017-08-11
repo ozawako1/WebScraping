@@ -203,5 +203,58 @@ def is_empty(obj)
     return ret
 end
 
+CW_ACCOUNT_TAB_ID = 0
+CW_ACCOUNT_TAB_ROOM_ID = 1
+CW_ACCOUNT_TAB_NAME = 2
+CW_ACCOUNT_TAB_EMAIL = 3
 
+def load_cw_acount_table()
+    cw_usermaster = get_config("COMMON", "CSVPath") + get_config("chatwork", "UserMaster")
+
+    return CSV.read(cw_usermaster)
+end
+
+
+def get_CW_account_id(email)
+
+    id = nil
+
+    cw_account_table = load_cw_acount_table()
+    
+    for account in cw_account_table do
+        if account[CW_ACCOUNT_TAB_EMAIL] == email
+            id = account[CW_ACCOUNT_TAB_ID]
+            break
+        end
+    end
+
+    return id
+
+end
+
+def get_CW_to_format(email, rich = true)
+
+    fmt = ""
+
+    cw_account_table = load_cw_acount_table()
+
+    id = ""
+    name = ""
+
+    for account in cw_account_table do
+        if (account[CW_ACCOUNT_TAB_EMAIL] == email) then
+            id = account[CW_ACCOUNT_TAB_ID]
+            name = account[CW_ACCOUNT_TAB_NAME]
+            break
+        end
+    end
+
+    fmt = "[To:" + id + "]"
+    if (rich == true) then
+        fmt += name + " さん" + "\r\n"
+    end
+
+    return fmt
+
+end
 

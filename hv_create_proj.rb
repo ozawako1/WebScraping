@@ -102,7 +102,7 @@ begin
 			hourly_rate: 5000,
 			budget_by: "project_cost",
             estimate_by: "project_cost",
-            cost_budget: jdata["amount"].scan(/[0-9]/).to_s,
+            cost_budget: jdata["amount"].scan(/[0-9]/).join.to_i,
 			bill_by: "Project"	
 			)
 		puts("creating project [" + proj.name + "]...")
@@ -120,19 +120,15 @@ begin
 			hv.user_assignments.create(user_assignment)
 		end
 		
-		puts("[" + proj.code  + "] created.")
-		
+		puts("[" + proj.code  + "] created.")		
 		File.rename(f, jsonpath + "done/" + File.basename(f))
 
-		chatmsg = ""
-		chatmsg += jdata["clientname"] + " さん" + "\r\n"
-		chatmsg += "以下のプロジェクトコードを使用してください。" + "\r\n"
-		chatmsg += "\r\n"
-		chatmsg += "プロジェクト名: " + jdata["functioname"] + "\r\n"
+		chatmsg = "[info][title]プロジェクトコードが採番されました[/title]"
+		chatmsg += "プロジェクト名: " + jdata["functionname"] + "\r\n"
 		chatmsg += "プロジェクトコード: " + jdata["code"]
+		chatmsg += "[/info]（※このメッセージは、自動送信です。）"
 
-		cw_post_msg("システム連絡用", chatmsg)
-
+		cw_post_msg("マイチャット", chatmsg, jdata["replyaddress"], jdata["ccaddress"][0])
 
 	end
 	

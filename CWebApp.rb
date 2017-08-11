@@ -551,16 +551,16 @@ end
 
 
 class CWebAppChatwork < CWebApp
-    attr_reader :token, :cli
+    attr_reader :token, :http
 
     def initialize(b_url, dbg = 0)
         
         @token = get_config("chatwork", "APIToken")
 
-#        uri = URI.parse('https://api.chatwork.com/v2')
         uri = URI.parse(b_url)
-        @cli = Net::HTTP.new(uri.host, 443)
-        @cli.use_ssl = true
+        @http = Net::HTTP.new(uri.host, 443)
+        @http.use_ssl = true
+        @http.set_debug_output $stderr if dbg == 1
 
         super(b_url, dbg)
 
@@ -571,7 +571,7 @@ class CWebAppChatwork < CWebApp
         ret = ""
 
         # チャットの情報一覧を取得してお目当てのroomIDを探す
-        res = @cli.get('/v2/rooms', {'X-ChatWorkToken' => @token})
+        res = @http.get("/v2/rooms", {"X-ChatWorkToken" => @token})
         if (res.code != "200") 
             raise "Error. get rooms error." + res.code
         end
@@ -594,7 +594,7 @@ class CWebAppChatwork < CWebApp
 
         ret = ""
 
-        res = @cli.get("/v2/contacts", {"X-ChatWorkToken" => @token})
+        res = @http.get("/v2/contacts", {"X-ChatWorkToken" => @token})
         if (res.code != "200") 
             raise "Error. get contacts error." + res.code
         end
@@ -618,10 +618,17 @@ class CWebAppChatwork < CWebApp
 
         room_id = find_room(room_name)
 
-        res = @cli.post("/v2/rooms/" + room_id.to_s + "/messages", "body="+URI.encode(msg), {'X-ChatWorkToken' => @token})
+        req = Net::HTTP::Post.new("/v2/rooms/" + room_id.to_s + "/messages")
+        
+        req["X-ChatWorkToken"] = @token
+
+        req.set_form_data({"body" => msg})
+        
+        res = @http.request(req)
         if (res.code != "200") 
             raise "Error. post message error." + res.code
         end
+
 
         # 正常に投稿されるとメッセージIDが返る
         ret = JSON.parse(res.body)
@@ -630,26 +637,11 @@ class CWebAppChatwork < CWebApp
 
     end
 
-    def chat_msg_to (room_name, to_user, msg)
-
-        begin
-
-            account_id = find_account(to_user)
-
-            body_msg = "[To:" + account_id + "] " + to_user + " さん\r\n" + msg
-
-            chat_msg(room_name, body_msg)
-
-        rescue => e
-            raise e
-        end
-
-    end
 
     def flush_user_master()
         #account_id, room_id, name, chatwork_id, organization_id, organization_name, department, avatar_image_url
 
-        res = @cli.get("/v2/contacts", {"X-ChatWorkToken" => @token})
+        res = @http.get("/v2/contacts", {"X-ChatWorkToken" => @token})
         if (res.code != "200") 
             raise "Error. get contacts error." + res.code
         end

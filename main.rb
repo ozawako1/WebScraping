@@ -5,6 +5,7 @@ require_relative "hv_export_proj_hours"
 require_relative "hv_export_user_hours"
 require_relative "hv_export_users"
 require_relative "hv_export_projects"
+require_relative "cw_post"
 
 
 subdomain = get_config("Harvest",	"SubDomain")
@@ -23,11 +24,14 @@ TEST_EXPORT_USER_MASTER = 2
 TEST_EXPORT_PROJ_MASTER = 3
 TEST_EXPORT_TASK_MASTER = 4
 
+TEST_CW_POST = 10
+
 #TestMode = TEST_EXPORT_USER_HOURS
-TestMode = TEST_EXPORT_PROJ_HOURS
+#TestMode = TEST_EXPORT_PROJ_HOURS
 #TestMode =  TEST_EXPORT_TASK_MASTER
 #TestMode = TEST_EXPORT_USER_MASTER
 #TestMode = TEST_EXPORT_PROJ_MASTER
+TestMode = TEST_CW_POST
 
 ARGV.each { |arg|
     case arg
@@ -54,6 +58,8 @@ begin
         hv_export_projects(hv, use_debug)
     when TEST_EXPORT_TASK_MASTER
         hv_export_task(hv, use_debug)
+    when TEST_CW_POST
+        cw_post_msg("マイチャット", "test投稿", "kitamura@motex.co.jp")
     end
 
 rescue => e
