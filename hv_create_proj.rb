@@ -92,7 +92,7 @@ begin
 		jdata = open(f) do |io|
 			JSON.load(io)
 		end
-		
+=begin		
 		proj = Harvest::Project.new(
 			client_id: client.id,
 			name: jdata["functionname"], 
@@ -122,6 +122,7 @@ begin
 		
 		puts("[" + proj.code  + "] created.")		
 		File.rename(f, jsonpath + "done/" + File.basename(f))
+=end
 
 		chatmsg = "[info][title]プロジェクトコードが採番されました[/title]"
 		chatmsg += "プロジェクト名: " + jdata["functionname"] + "\r\n"

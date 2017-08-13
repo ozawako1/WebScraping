@@ -6,7 +6,7 @@
             "type": "Ruby",
             "request": "launch",
             "cwd": "${workspaceRoot}",
-            "program": "${workspaceRoot}/main.rb"
+            "program": "${workspaceRoot}/o365_healthcheck.rb"
         },
         {
             "name": "Listen for rdebug-ide",

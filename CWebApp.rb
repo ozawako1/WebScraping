@@ -570,7 +570,7 @@ class CWebAppChatwork < CWebApp
         
         ret = ""
 
-        # チャットの情報一覧を取得してお目当てのroomIDを探す
+        # チャットの一覧を取得してお目当てのroomIDを探す
         res = @http.get("/v2/rooms", {"X-ChatWorkToken" => @token})
         if (res.code != "200") 
             raise "Error. get rooms error." + res.code
@@ -578,10 +578,8 @@ class CWebAppChatwork < CWebApp
 
         jarr = JSON.parse(res.body)
 
-        puts jarr if @debug == 1
-
         jarr.each do |j|
-            if j["name"] == room_name
+            if (j["name"] == room_name) then
                 ret = j["room_id"]
                 break
             end
@@ -595,15 +593,14 @@ class CWebAppChatwork < CWebApp
         ret = ""
 
         res = @http.get("/v2/contacts", {"X-ChatWorkToken" => @token})
-        if (res.code != "200") 
+        if (res.code != "200") then
             raise "Error. get contacts error." + res.code
         end
 
         jarr = JSON.parse(res.body)
-        puts jarr if @debug == 1
 
         jarr.each do |j|
-            if j["name"] == user_name
+            if j["name"] == user_name then
                 ret = j["account_id"]
                 break
             end
@@ -616,6 +613,8 @@ class CWebAppChatwork < CWebApp
 
     def chat_msg (room_name, msg)
 
+        ret = ""
+
         room_id = find_room(room_name)
 
         req = Net::HTTP::Post.new("/v2/rooms/" + room_id.to_s + "/messages")
@@ -625,15 +624,14 @@ class CWebAppChatwork < CWebApp
         req.set_form_data({"body" => msg})
         
         res = @http.request(req)
-        if (res.code != "200") 
+        if (res.code != "200") then
             raise "Error. post message error." + res.code
         end
-
 
         # 正常に投稿されるとメッセージIDが返る
         ret = JSON.parse(res.body)
 
-        puts ret if @debug == 1
+        return ret 
 
     end
 
