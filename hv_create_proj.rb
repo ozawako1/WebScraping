@@ -128,7 +128,7 @@ begin
 		chatmsg += "プロジェクトコード: " + jdata["code"]
 		chatmsg += "[/info]（※このメッセージは、自動送信です。）"
 
-		cw_post_msg("マイチャット", chatmsg, jdata["replyaddress"], jdata["ccaddress"][0])
+		cw_post_msg("システム連絡用", chatmsg, jdata["replyaddress"], jdata["ccaddress"][0])
 
 	end
 	

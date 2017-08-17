@@ -4,6 +4,8 @@ require "nokogiri"
 require "rubygems"
 #require "google/api_client"
 #require "google_drive"
+require 'securerandom'
+require "jwt"
 
 require_relative "util"
 require_relative "webutil"
@@ -66,6 +68,8 @@ GAROON_PAGE_LOGIN = "login"
 GAROON_FORM_LOGIN = "login-form-slash"
 
 ECO_SEARCH_PAGE = "/cgi-bin/BSCD.cgi"
+
+HTTP_OK = "200"
 
 
 class CWebApp
@@ -549,8 +553,11 @@ class CWebAppGaroon < CWebApp
     
 end
 
+class CWebAppO365 < CWebApp 
+end
 
-class CWebAppChatwork < CWebApp
+
+class CWebAppChatwork
     attr_reader :token, :http
 
     def initialize(b_url, dbg = 0)
@@ -561,8 +568,6 @@ class CWebAppChatwork < CWebApp
         @http = Net::HTTP.new(uri.host, 443)
         @http.use_ssl = true
         @http.set_debug_output $stderr if dbg == 1
-
-        super(b_url, dbg)
 
     end
 
@@ -661,6 +666,137 @@ class CWebAppChatwork < CWebApp
         end
     
     end
+
+
+end
+
+
+class CWebAppO365 
+    attr_reader :http, 
+        :debug,
+        :client_id, 
+        :redirect_uri, 
+        :client_secret, 
+        :tenant_id, 
+        :access_token,
+        :finger_print
+
+    def initialize(b_url, dbg = 0)
+        
+        @client_id      = get_config("o365", "ClientId")
+        @redirect_uri   = get_config("o365", "RedirectUri")
+        @client_secret  = get_config("o365", "ClientSecret")
+        @finger_print   = get_config("o365", "FingerPrint")
+        @cert_file      = get_config("o365", "CertFile")
+        @debug          = dbg
+        @access_token   = ""
+
+        uri = URI.parse(b_url)
+        @http = Net::HTTP.new(uri.host, 443)
+
+        @http.use_ssl = true
+        @http.set_debug_output $stderr if @debug == 1
+
+    end
+
+    def Prep()
+
+        data = {"resource"      => "https://manage.office.com",
+                "client_id"     => @client_id,
+                "redirect_uri"  => @redirect_uri,
+                "client_secret" => @client_secret,
+                "grant_type"    => "authorization_code",
+                "code"          => "AQABAAIAAAA9kTklhVy7SJTGAzR-p1BcjO6V2rNdOZdFpHOUa7LQdvz55T7IeAucYQwgwi_-bJgTlCtjuOwn-4karTWYy5RpnN5xVvb5opNDueGNtvURTwIcPgrF0BIASAY8pBh2yBVoRs_bWt3Zg6J0VtMjIBagoP76z-C2ofJqHd71vbr_nruSkHSOPgwFO9bv-F3tjxt8oQaNMwIKNoan2zsMq5pzJIlT_-nX_6DZuEDN9slFYMIVUX1Lj60LggpZDMrfuUTCG-OUGfP0KMeBzQ649Vpdx7LhPydR3U2xTLX_pCdkkxe0OXEUr4GGPp-K2CuiVvJ-3ID6cX3edBJjh_KVrX1qUI2PE8n_iyX_jGJYyZcfzvBNH3ufkqzLKwCrMCWvK0OvoCr-B5RcKTMCsttXeYfO8LGe4jt3vOPAmLU_z_HUN3qU4PYlcucjRP-lCGLu3sRjoLUw2gK_qOm-XA7SJ7eJIzRKc2rGI_GQTCy5QGx0wkk4L5SRUPUYXC2XpiJo86U3Lo5lmminc_SBO4OoON7cUkNfQDERpkdl2s36Xig7J5dvGMKKz9IK1F6s9tTVgKjuUJiPUqImAsFG6B245PtEL_hJmtpynki7Hlw7iL-A7avYGfDNhlry-wPSHZCHCboQDJi_GhpLD2FAq02eJwQQbIpVvKrzL6NVf3g8VvxjSTTHgtl1Ck08Mx3kNzUOpEm6q9XUNCvE90TdbPZREG8HIAA"
+        }
+
+        uri = URI.parse("https://login.windows.net/")
+        prehttp = Net::HTTP.new(uri.host, 443)
+        prehttp.use_ssl = true
+        prehttp.set_debug_output $stderr if @debug == 1
+       
+        req = Net::HTTP::Post.new("/common/oauth2/token")
+        req.set_form_data(data)
+
+        res = prehttp.request(req)
+        if (res.code != HTTP_OK) then
+            raise "Error. posting code failure. (" + res.code + ")"
+        end 
+        
+        response_data = JSON.parse(res.body)
+
+        @access_token   = response_data["access_token"]
+        #    tid = "efa9a9e1-c3d8-424e-acf5-574179cea8b1"
+        @tenant_id      = GetTenantId(response_data)
+    
+    end
+
+    def GetTenantId(jdata)
+
+        p jdata if @debug == 1
+        
+        if (@access_token == "") then
+            @access_token = jdata["access_token"]
+        end
+
+        decode_at = JWT.decode(@access_token, nil, false)
+
+        p decode_at if @debug == 1
+
+        tenant_id = decode_at[0]["tid"]
+
+        return tenant_id
+    end
+
+    def GetCurrentStatus()
+        
+        response = @http.get("/api/v1.0/" + tenant_id + "/ServiceComms/CurrentStatus",
+                             {"Authorization" => "Bearer " + @access_token})
+        
+        return JSON.parse(response.body)
+    
+    end
+
+    def makejwt()
+
+        cert = OpenSSL::X509::Certificate.new(File.open(@cert_file))
+        print cert.to_pem
+        print cert.to_text
+        print Base64.encode64(cert.to_text)
+        
+        print OpenSSL::Digest::SHA1.new(cert.to_der).to_s
+
+        pkey = cert.public_key
+        print pkey
+
+        p Base64.encode64(pkey.to_text)
+
+        p SecureRandom.uuid
+        
+
+        header = {
+            :alg => "RS256",
+            :x5t => @finger_print
+        }
+
+        payload = {
+            :aud => "https://login.windows.net/" + @tenant_id + "/oauth2/token",
+            :iss => @client_id,
+            :sub => @client_id,
+            :jti => SecureRandom.hex(16),
+            :nbf => Time.new(2017, 8, 1, 0, 0, 0, "+09:00").to_i,
+            :exp => Time.new(2017, 8, 1, 0, 0, 0, "+09:00").to_i           
+        }
+
+=begin 
+        payload = { data: 'test' }
+        rsa_private = OpenSSL::PKey::RSA.generate 2048
+        rsa_public  = rsa_private.public_key
+        
+        token = JWT.encode payload, rsa_private, 'RS256'
+=end 
+
+    end
+
 
 
 end

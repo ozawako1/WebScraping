@@ -4,9 +4,11 @@
 require_relative "util"
 require_relative "CWebApp"
 
+NO_DEBUG = 0
+
 def cw_post_msg(room_name, msg, to_email = nil, cc_email = nil)
 
-    chatwork = CWebAppChatwork.new("https://api.chatwork.com", 1)
+    chatwork = CWebAppChatwork.new("https://api.chatwork.com", NO_DEBUG)
     if chatwork == nil
         puts("Init Error.")
         exit
