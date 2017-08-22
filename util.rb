@@ -6,6 +6,7 @@ require "csv"
 require "json"
 
 CHECK_FILE = "/var/tmp/commit_amoeba.chk"
+CHECK_FILE_O365 = "/var/tmp/o365_service.chk"
 CONFIG = "/etc/ozawaapps/webapps.json"
 MODE_NORMAL = 0
 MODE_GAROON = 1
@@ -50,6 +51,26 @@ def mark_ran()
 	f = open(CHECK_FILE, "w")
 	f.write(Date::today.jd)
 	f.close
+end
+
+def mark_ran_o365()
+	f = open(CHECK_FILE_O365, "w")
+	f.write(Time.now)
+	f.close
+end
+
+def get_last_ran_o365()
+	f = open(CHECK_FILE_O365, "r+")
+	ltime = f.read
+    f.close
+    
+    lt = 0
+    if ltime != ""
+        lt = Time.parse(ltime)
+        lt = lt.to_i
+    end
+
+	return lt
 end
 
 def get_day_number_of_year(d)

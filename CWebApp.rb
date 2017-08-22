@@ -4,7 +4,8 @@ require "nokogiri"
 require "rubygems"
 #require "google/api_client"
 #require "google_drive"
-require 'securerandom'
+#require 'securerandom'
+require "openssl"
 require "jwt"
 
 require_relative "util"
@@ -686,35 +687,94 @@ class CWebAppO365
         @client_id      = get_config("o365", "ClientId")
         @redirect_uri   = get_config("o365", "RedirectUri")
         @client_secret  = get_config("o365", "ClientSecret")
-        @finger_print   = get_config("o365", "FingerPrint")
         @cert_file      = get_config("o365", "CertFile")
         @debug          = dbg
         @access_token   = ""
-
+        @tenant_id      = get_config("o365", "TenantId")
+        @key_file       = get_config("o365", "KeyFile")
+        @jwt_token      = makejwt()        
+        
         uri = URI.parse(b_url)
         @http = Net::HTTP.new(uri.host, 443)
-
         @http.use_ssl = true
         @http.set_debug_output $stderr if @debug == 1
 
     end
 
-    def Prep()
+    def _Prep4AccessCode()
 
-        data = {"resource"      => "https://manage.office.com",
-                "client_id"     => @client_id,
+        uri = URI.parse("https://login.windows.net/common/oauth2/authorize")
+        prehttp = Net::HTTP.new(uri.host, 443)
+        prehttp.use_ssl = true
+        prehttp.set_debug_output $stderr if @debug == 1
+        
+        data1 = {
+            "client_id"     => @client_id,
+            "response_type" => "code",
+            "redirect_uri"  => @redirect_uri,
+            "response_mode" => "query",
+            "resource"      => "https://manage.office.com"
+        }
+        uri.query = URI.encode_www_form(data1)
+
+        p uri.to_s
+
+        uri = nil
+
+        # HTTP.Get uri
+        #リダイレクトURLから、authorization_codeを取り出す。
+        #https://josys.motex.co.jp/svcchk?code=
+        #AQABAAIAAAA9kTklhVy7SJTGAzR-p1Bcl77Sp_pX2knG0AmKiEp3g28I8Q0PHaZzrtUAv5ZkeZzcpncqWYoPEKdHl5BstrXfxfAZ8SHd3lGiXcacmp3xCCHKR6Hk-o3VOqKdd38aSO6pQFCTK_tWfHwSwCOUw99xK4QxoklojQRhg1YzlDnyx2rKabU-saPe1HaXi5DB3-RV9WulaPUEYJDtx9s9xH_4oqECDoP2L-t4e3MVbimaEJey6eTPjaLtgFhWZls-aPdOxZnfdykHo2onG_Jdy642s7-SvuAQPyFQ_QFbOHNVoEPN3GTsGB_S4BRK01n23Xzg-myOMAyVKZJL-J9uOfmLEpzuRbfK9DkcZhsBecrLuXHaYMHEbjFdF1Yu_bwuY_LkxWNZjZT5SLSYGahDFT5LohiH4klf37CBgLelWzhsYMCga0JFpPdwjEeHvz_xSBS-a78MHhNhLfwhQj4bpEmem2A551kih1HnkwoJbfwTpml4jDID_XNJi8DiYr3oT4XiKDV12-M2rJMfuZp7SO_QvMyPfJRQ_yac-qaE04-mOOXcB6oqqm6KPqQFWZbKjpGtDEGx4nDDeYrnosaI4EGfUuv6aO5UxKYWkZhULY67o10NsUSk4oZ7QunHvfWtLBk3HWcvsbDR4v0KeUDOdWIdsZ05Ig_o-lgTG9btt_Hz5TQeXC5Adn6z1RltatWlrN2NeQcfLpIKLcTgayxFsS4rIAA
+        #&session_state=052f3d85-a138-42d2-90cc-33197fad6383
+        access_code = "AQABAAIAAAA9kTklhVy7SJTGAzR-p1Bcl77Sp_pX2knG0AmKiEp3g28I8Q0PHaZzrtUAv5ZkeZzcpncqWYoPEKdHl5BstrXfxfAZ8SHd3lGiXcacmp3xCCHKR6Hk-o3VOqKdd38aSO6pQFCTK_tWfHwSwCOUw99xK4QxoklojQRhg1YzlDnyx2rKabU-saPe1HaXi5DB3-RV9WulaPUEYJDtx9s9xH_4oqECDoP2L-t4e3MVbimaEJey6eTPjaLtgFhWZls-aPdOxZnfdykHo2onG_Jdy642s7-SvuAQPyFQ_QFbOHNVoEPN3GTsGB_S4BRK01n23Xzg-myOMAyVKZJL-J9uOfmLEpzuRbfK9DkcZhsBecrLuXHaYMHEbjFdF1Yu_bwuY_LkxWNZjZT5SLSYGahDFT5LohiH4klf37CBgLelWzhsYMCga0JFpPdwjEeHvz_xSBS-a78MHhNhLfwhQj4bpEmem2A551kih1HnkwoJbfwTpml4jDID_XNJi8DiYr3oT4XiKDV12-M2rJMfuZp7SO_QvMyPfJRQ_yac-qaE04-mOOXcB6oqqm6KPqQFWZbKjpGtDEGx4nDDeYrnosaI4EGfUuv6aO5UxKYWkZhULY67o10NsUSk4oZ7QunHvfWtLBk3HWcvsbDR4v0KeUDOdWIdsZ05Ig_o-lgTG9btt_Hz5TQeXC5Adn6z1RltatWlrN2NeQcfLpIKLcTgayxFsS4rIAA"
+
+        data2 = {"client_id"    => @client_id,
+                "grant_type"    => "authorization_code",
                 "redirect_uri"  => @redirect_uri,
                 "client_secret" => @client_secret,
-                "grant_type"    => "authorization_code",
-                "code"          => "AQABAAIAAAA9kTklhVy7SJTGAzR-p1BcjO6V2rNdOZdFpHOUa7LQdvz55T7IeAucYQwgwi_-bJgTlCtjuOwn-4karTWYy5RpnN5xVvb5opNDueGNtvURTwIcPgrF0BIASAY8pBh2yBVoRs_bWt3Zg6J0VtMjIBagoP76z-C2ofJqHd71vbr_nruSkHSOPgwFO9bv-F3tjxt8oQaNMwIKNoan2zsMq5pzJIlT_-nX_6DZuEDN9slFYMIVUX1Lj60LggpZDMrfuUTCG-OUGfP0KMeBzQ649Vpdx7LhPydR3U2xTLX_pCdkkxe0OXEUr4GGPp-K2CuiVvJ-3ID6cX3edBJjh_KVrX1qUI2PE8n_iyX_jGJYyZcfzvBNH3ufkqzLKwCrMCWvK0OvoCr-B5RcKTMCsttXeYfO8LGe4jt3vOPAmLU_z_HUN3qU4PYlcucjRP-lCGLu3sRjoLUw2gK_qOm-XA7SJ7eJIzRKc2rGI_GQTCy5QGx0wkk4L5SRUPUYXC2XpiJo86U3Lo5lmminc_SBO4OoON7cUkNfQDERpkdl2s36Xig7J5dvGMKKz9IK1F6s9tTVgKjuUJiPUqImAsFG6B245PtEL_hJmtpynki7Hlw7iL-A7avYGfDNhlry-wPSHZCHCboQDJi_GhpLD2FAq02eJwQQbIpVvKrzL6NVf3g8VvxjSTTHgtl1Ck08Mx3kNzUOpEm6q9XUNCvE90TdbPZREG8HIAA"
+                "resource"      => "https://manage.office.com",
+                "code"          => access_code
         }
+
+        uri = URI.parse("https://login.windows.net/common/oauth2/token")
+        prehttp = Net::HTTP.new(uri.host, 443)
+        prehttp.use_ssl = true
+        prehttp.set_debug_output $stderr if @debug == 1
+
+        req = Net::HTTP::Post.new(uri.path)
+        req.set_form_data(data2)
+
+        res = prehttp.request(req)
+        if (res.code != HTTP_OK) then
+            p JSON.parse(res.body)
+            raise "Error. posting code failure. (" + res.code + ")"
+        end 
+
+        response_data = JSON.parse(res.body)
+
+        @access_token   = response_data["access_token"] 
+        @tenant_id      = gettenantid(response_data) #efa9a9e1-c3d8-424e-acf5-574179cea8b1
+
+        p @tenant_id
+
+
+    end
+
+
+    def Prep()
+
+        data = {"resource"             => "https://manage.office.com",
+                "client_id"             => @client_id,
+                "grant_type"            => "client_credentials",
+                "client_assertion_type" => "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                "client_assertion"      => @jwt_token}
 
         uri = URI.parse("https://login.windows.net/")
         prehttp = Net::HTTP.new(uri.host, 443)
         prehttp.use_ssl = true
         prehttp.set_debug_output $stderr if @debug == 1
-       
-        req = Net::HTTP::Post.new("/common/oauth2/token")
+        
+        req = Net::HTTP::Post.new("/" + @tenant_id + "/oauth2/token")
         req.set_form_data(data)
 
         res = prehttp.request(req)
@@ -725,12 +785,24 @@ class CWebAppO365
         response_data = JSON.parse(res.body)
 
         @access_token   = response_data["access_token"]
-        #    tid = "efa9a9e1-c3d8-424e-acf5-574179cea8b1"
-        @tenant_id      = GetTenantId(response_data)
-    
+
+
     end
 
-    def GetTenantId(jdata)
+    def GetCurrentStatus()
+        
+        response = @http.get("/api/v1.0/" + @tenant_id + "/ServiceComms/CurrentStatus",
+                            {"Authorization" => "Bearer " + @access_token})
+                            
+        data = JSON.parse(response.body)
+
+        return data["value"]
+
+    end
+
+
+
+    def gettenantid(jdata)
 
         p jdata if @debug == 1
         
@@ -747,59 +819,43 @@ class CWebAppO365
         return tenant_id
     end
 
-    def GetCurrentStatus()
+
+    def getmsfingerprint(fprint)
+
+        bin = Array(fprint.to_s).pack("H*")
         
-        response = @http.get("/api/v1.0/" + tenant_id + "/ServiceComms/CurrentStatus",
-                             {"Authorization" => "Bearer " + @access_token})
-        
-        return JSON.parse(response.body)
-    
+        return Base64.strict_encode64(bin)
+
     end
 
     def makejwt()
 
         cert = OpenSSL::X509::Certificate.new(File.open(@cert_file))
-        print cert.to_pem
-        print cert.to_text
-        print Base64.encode64(cert.to_text)
+        pkey = OpenSSL::PKey::RSA.new(File.open(@key_file))
+            
+        thumbprint = OpenSSL::Digest::SHA1.new(cert.to_der)
+        jwt_thumbprint = getmsfingerprint(thumbprint.to_s)
         
-        print OpenSSL::Digest::SHA1.new(cert.to_der).to_s
-
-        pkey = cert.public_key
-        print pkey
-
-        p Base64.encode64(pkey.to_text)
-
-        p SecureRandom.uuid
-        
-
         header = {
             :alg => "RS256",
-            :x5t => @finger_print
+            :x5t => jwt_thumbprint
         }
 
         payload = {
             :aud => "https://login.windows.net/" + @tenant_id + "/oauth2/token",
             :iss => @client_id,
             :sub => @client_id,
-            :jti => SecureRandom.hex(16),
-            :nbf => Time.new(2017, 8, 1, 0, 0, 0, "+09:00").to_i,
-            :exp => Time.new(2017, 8, 1, 0, 0, 0, "+09:00").to_i           
+            :jti => "13258bf2-5c80-4df6-8da2-793a2acae8be", #SecureRandom.hex(16),
+            :nbf => cert.not_before.to_i,
+            :exp => cert.not_after.to_i   
         }
-
-=begin 
-        payload = { data: 'test' }
-        rsa_private = OpenSSL::PKey::RSA.generate 2048
-        rsa_public  = rsa_private.public_key
         
-        token = JWT.encode payload, rsa_private, 'RS256'
-=end 
+        token = JWT.encode(payload, pkey, "RS256", header)
+        
+        @jwt_token = token
 
     end
 
 
 
 end
-
-
-
