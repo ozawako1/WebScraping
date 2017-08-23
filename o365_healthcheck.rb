@@ -22,10 +22,10 @@ begin
     
     o365 = CWebAppO365.new("https://manage.office.com/", DEBUG)
 
-    o365.Prep()
     status_arr = o365.GetCurrentStatus()
 
     status_arr.each { |s|
+
         s_id     = s["Id"]
         s_name   = s["WorkloadDisplayName"]
         s_status = s["Status"]

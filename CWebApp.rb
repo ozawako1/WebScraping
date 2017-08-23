@@ -701,7 +701,7 @@ class CWebAppO365
 
     end
 
-    def _Prep4AccessCode()
+    def _GetTenantId()
 
         uri = URI.parse("https://login.windows.net/common/oauth2/authorize")
         prehttp = Net::HTTP.new(uri.host, 443)
@@ -751,31 +751,31 @@ class CWebAppO365
         end 
 
         response_data = JSON.parse(res.body)
-
-        @access_token   = response_data["access_token"] 
-        @tenant_id      = gettenantid(response_data) #efa9a9e1-c3d8-424e-acf5-574179cea8b1
+        @tenant_id = gettenantid(response_data) #efa9a9e1-c3d8-424e-acf5-574179cea8b1
 
         p @tenant_id
-
 
     end
 
 
-    def Prep()
+    def prep()
 
-        data = {"resource"             => "https://manage.office.com",
+        data = {"resource"              => "https://manage.office.com",
                 "client_id"             => @client_id,
                 "grant_type"            => "client_credentials",
                 "client_assertion_type" => "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 "client_assertion"      => @jwt_token}
 
-        uri = URI.parse("https://login.windows.net/")
+        target = "https://login.windows.net/" + @tenant_id + "/oauth2/token"
+
+        uri = URI.parse(target)
+
         prehttp = Net::HTTP.new(uri.host, 443)
+        req = Net::HTTP::Post.new(uri.path)
+        req.set_form_data(data)
+
         prehttp.use_ssl = true
         prehttp.set_debug_output $stderr if @debug == 1
-        
-        req = Net::HTTP::Post.new("/" + @tenant_id + "/oauth2/token")
-        req.set_form_data(data)
 
         res = prehttp.request(req)
         if (res.code != HTTP_OK) then
@@ -786,14 +786,20 @@ class CWebAppO365
 
         @access_token   = response_data["access_token"]
 
-
     end
 
     def GetCurrentStatus()
+
+        if (@access_token == "") then
+            prep()
+        end
         
         response = @http.get("/api/v1.0/" + @tenant_id + "/ServiceComms/CurrentStatus",
                             {"Authorization" => "Bearer " + @access_token})
-                            
+        if (response.code != HTTP_OK) then
+            raise "Error. Getting Status failure. (" + res.code + ")"
+        end
+
         data = JSON.parse(response.body)
 
         return data["value"]
@@ -803,18 +809,14 @@ class CWebAppO365
 
 
     def gettenantid(jdata)
-
-        p jdata if @debug == 1
         
-        if (@access_token == "") then
-            @access_token = jdata["access_token"]
-        end
+        atoken = jdata["access_token"]
+        
+        decode_atoken = JWT.decode(atoken, nil, false)
 
-        decode_at = JWT.decode(@access_token, nil, false)
+        p decode_atoken if @debug == 1
 
-        p decode_at if @debug == 1
-
-        tenant_id = decode_at[0]["tid"]
+        tenant_id = decode_atoken[0]["tid"]
 
         return tenant_id
     end
@@ -845,7 +847,7 @@ class CWebAppO365
             :aud => "https://login.windows.net/" + @tenant_id + "/oauth2/token",
             :iss => @client_id,
             :sub => @client_id,
-            :jti => "13258bf2-5c80-4df6-8da2-793a2acae8be", #SecureRandom.hex(16),
+            :jti => "13258bf2-5c80-4df6-8da2-793a2acae8be", #なんでもいいのか？
             :nbf => cert.not_before.to_i,
             :exp => cert.not_after.to_i   
         }
