@@ -5,8 +5,8 @@ require "uri"
 require "net/http"
 require "JSON"
 require "jwt"
-require_relative "cw_post"
 
+require_relative "cw_post"
 require_relative "CWebApp"
 
 DEBUG = 0
@@ -19,6 +19,9 @@ begin
     end
     
     last_ran = get_last_ran_o365()
+    if (DEBUG == 1) then
+        p "Last Ran: " + Time.at(last_ran).getutc.to_s
+    end
     
     o365 = CWebAppO365.new("https://manage.office.com/", DEBUG)
 
@@ -29,17 +32,30 @@ begin
         s_id     = s["Id"]
         s_name   = s["WorkloadDisplayName"]
         s_status = s["Status"]
-        s_time   = Time.parse(s["StatusTime"]).to_i
+    
+        if (o365.isChecked?(s_id) && s_status != "ServiceOperational") then
+   
+            s["IncidentIds"].each { |id| 
 
-        if (s_status != "ServiceOperational" && s_time > last_ran) then
+                msg = o365.GetMessage(id)
+                upd = Time.parse(msg["LastUpdatedTime"]).to_i
+                if (DEBUG == 1) then
+                    p "Last Updated: " + Time.at(upd).getutc.to_s
+                end
 
-            chatmsg = ""
-            chatmsg += "[info][title]Office365 正常性確認[/title]"
-            chatmsg += "サービス名: " + s_name + "\r\n"
-            chatmsg += "サービス状態: " + s_status
-            chatmsg += "[/info]（※このメッセージは、自動送信です。）\r\n"
+                if (upd > last_ran) then
+
+                    chatmsg = ""
+                    chatmsg += "[info][title]Office365 正常性確認[/title]"
+                    chatmsg += "サービス名: " + s_name + "\r\n"
+                    chatmsg += "サービス状態: " + s_status + "\r\n"
+                    chatmsg += "障害概要: " + msg["Title"]
+                    chatmsg += "[/info]（※このメッセージは、自動送信です。）\r\n"                                              
+
+                    cw_post_msg(board, chatmsg)                    
+                end
+            }
             
-            cw_post_msg(board, chatmsg)
         end
     
         p "ID:"     + s_id      if DEBUG == 1

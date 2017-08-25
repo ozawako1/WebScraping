@@ -55,7 +55,7 @@ end
 
 def mark_ran_o365()
 	f = open(CHECK_FILE_O365, "w")
-	f.write(Time.now)
+	f.write(Time.now.getutc)
 	f.close
 end
 

@@ -692,7 +692,8 @@ class CWebAppO365
         @access_token   = ""
         @tenant_id      = get_config("o365", "TenantId")
         @key_file       = get_config("o365", "KeyFile")
-        @jwt_token      = makejwt()        
+        @jwt_token      = makejwt()
+        @tmp_message    = nil        
         
         uri = URI.parse(b_url)
         @http = Net::HTTP.new(uri.host, 443)
@@ -797,7 +798,7 @@ class CWebAppO365
         response = @http.get("/api/v1.0/" + @tenant_id + "/ServiceComms/CurrentStatus",
                             {"Authorization" => "Bearer " + @access_token})
         if (response.code != HTTP_OK) then
-            raise "Error. Getting Status failure. (" + res.code + ")"
+            raise "Error. Getting Status failure. (" + response.code + ")"
         end
 
         data = JSON.parse(response.body)
@@ -806,7 +807,43 @@ class CWebAppO365
 
     end
 
+    def GetMessage(incidentId = nil)
 
+        if (@tmp_message == nil) 
+        
+            if (@access_token == "") then
+                prep()
+            end
+            
+            response = @http.get("/api/v1.0/" + @tenant_id + "/ServiceComms/Messages",
+                                {"Authorization" => "Bearer " + @access_token})
+            if (response.code != HTTP_OK) then
+                raise "Error. Getting Status failure. (" + response.code + ")"
+            end
+
+            data = JSON.parse(response.body)
+
+            @tmp_message = data["value"]
+        
+        end
+
+        ret = @tmp_message
+
+        if (incidentId != nil) then
+            @tmp_message.each { |msg|
+                m_id        = msg["Id"]
+                m_status    = msg["Status"]
+                m_time      = msg["LastUpdatedTime"]
+
+                if (incidentId == m_id) then
+                    ret = msg
+                    break     
+                end
+            }
+        end
+
+        return ret        
+    end
 
     def gettenantid(jdata)
         
@@ -857,6 +894,20 @@ class CWebAppO365
         @jwt_token = token
 
     end
+
+    def isChecked? (service_id)
+    
+        ret = false
+
+        case service_id
+        when "Exchange", "OneDriveForBusiness", "OrgLiveID", "OSDPPlatform", "OSub", "PowerBIcom", "SharePoint" then
+            ret = true
+        end
+
+        return ret
+
+    end
+
 
 
 
