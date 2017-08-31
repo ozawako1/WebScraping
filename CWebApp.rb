@@ -559,10 +559,11 @@ end
 
 
 class CWebAppChatwork
-    attr_reader :token, :http
+    attr_reader :token, :http, :rooms
 
     def initialize(b_url, dbg = 0)
         
+        @rooms = nil
         @token = get_config("chatwork", "APIToken")
 
         uri = URI.parse(b_url)
@@ -576,15 +577,16 @@ class CWebAppChatwork
         
         ret = ""
 
-        # チャットの一覧を取得してお目当てのroomIDを探す
-        res = @http.get("/v2/rooms", {"X-ChatWorkToken" => @token})
-        if (res.code != "200") 
-            raise "Error. get rooms error." + res.code
+        if (@rooms == nil) then
+            # チャットの一覧を取得してお目当てのroomIDを探す
+            res = @http.get("/v2/rooms", {"X-ChatWorkToken" => @token})
+            if (res.code != "200") 
+                raise "Error. get rooms error." + res.code
+            end
+            @rooms = JSON.parse(res.body)
         end
 
-        jarr = JSON.parse(res.body)
-
-        jarr.each do |j|
+        @rooms.each do |j|
             if (j["name"] == room_name) then
                 ret = j["room_id"]
                 break
@@ -593,6 +595,60 @@ class CWebAppChatwork
 
         return ret
     end
+
+    def say_hello( room_name )
+        
+        r_msgs = nil
+        rid = find_room( room_name )
+
+        res = @http.get("/v2/rooms/" + rid.to_s + "/messages?force=0", {"X-ChatWorkToken" => @token})
+    
+        case res.code
+        when "200"        
+        when "204" #No Contents.
+            raise "Info. no contents."
+        else
+            raise "Error. get new messages. (%s)"%[res.code]
+        end 
+
+        r_msgs = JSON.parse(res.body)
+
+        me = get_me()
+
+        r_msgs.each do |msg|
+            if (msg["body"].include?("[To:%d]"%me["account_id"])) then
+                repmsg = "・・・"
+                reply(room_name, msg, repmsg)
+            end
+        end
+        
+    end
+
+    def get_me()
+
+        res = @http.get("/v2/me", {"X-ChatWorkToken" => @token})
+        if (res.code != "200") 
+            raise "Error. get rooms error." + res.code
+        end
+
+        me = JSON.parse(res.body)
+    
+    end
+
+
+    def reply(room_name, org_msg, rep_msg)
+
+        rid = find_room( room_name )
+
+        msg = ""
+        msg += "[rp aid=%d to=%d-%d] %sさん"%[org_msg["account"]["account_id"], rid, org_msg["message_id"], org_msg["account"]["name"]]
+        msg += "\r\n"
+        msg += rep_msg
+
+        chat_msg(room_name, msg)
+    
+    end
+
 
     def find_account( user_name )
 

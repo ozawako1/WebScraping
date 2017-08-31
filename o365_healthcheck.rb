@@ -46,7 +46,7 @@ begin
                 if (upd > last_ran) then
 
                     chatmsg = ""
-                    chatmsg += "[info][title]Office365 正常性確認[/title]"
+                    chatmsg += "[info][title]Office365 サービス異常検知（公式）[/title]"
                     chatmsg += "サービス名: " + s_name + "\r\n"
                     chatmsg += "サービス状態: " + s_status + "\r\n"
                     chatmsg += "障害概要: " + msg["Title"]

@@ -6,6 +6,29 @@ require_relative "CWebApp"
 
 NO_DEBUG = 0
 
+def cw_say_hello(room_name)
+    chatwork = CWebAppChatwork.new("https://api.chatwork.com", NO_DEBUG)
+    if chatwork == nil
+        puts("Init Error.")
+        exit
+    end
+
+    body = ""
+
+    begin
+
+        chatwork.say_hello(room_name)
+
+    rescue => e
+        
+        p e
+        p e.backtrace
+        p Time.now
+
+    end
+end
+
+
 def cw_post_msg(room_name, msg, to_email = nil, cc_email = nil)
 
     chatwork = CWebAppChatwork.new("https://api.chatwork.com", NO_DEBUG)

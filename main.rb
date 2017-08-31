@@ -25,13 +25,16 @@ TEST_EXPORT_PROJ_MASTER = 3
 TEST_EXPORT_TASK_MASTER = 4
 
 TEST_CW_POST = 10
+TEST_CW_HELLO = 11
 
 #TestMode = TEST_EXPORT_USER_HOURS
 #TestMode = TEST_EXPORT_PROJ_HOURS
 #TestMode =  TEST_EXPORT_TASK_MASTER
 #TestMode = TEST_EXPORT_USER_MASTER
 #TestMode = TEST_EXPORT_PROJ_MASTER
-TestMode = TEST_CW_POST
+#TestMode = TEST_CW_POST
+TestMode = TEST_CW_HELLO
+
 
 ARGV.each { |arg|
     case arg
@@ -60,6 +63,8 @@ begin
         hv_export_task(hv, use_debug)
     when TEST_CW_POST
         cw_post_msg("マイチャット", "test投稿", "kitamura@motex.co.jp")
+    when TEST_CW_HELLO
+        cw_say_hello("部門長MTG")    
     end
 
 rescue => e

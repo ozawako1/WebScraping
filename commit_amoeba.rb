@@ -6,7 +6,7 @@ require_relative "CWebApp"
 require_relative "util"
 
 use_proxy = 0
-use_debug = 0
+use_debug = 1
 
 ARGV.each { |arg|
 	case arg
