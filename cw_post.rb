@@ -64,5 +64,6 @@ def cw_post_msg(room_name, msg, to_email = nil, cc_email = nil)
 end
 
 
+cw_say_hello("情シスbot（ベータ版）")
 
 

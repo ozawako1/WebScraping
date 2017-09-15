@@ -6,7 +6,7 @@
             "type": "Ruby",
             "request": "launch",
             "cwd": "${workspaceRoot}",
-            "program": "${workspaceRoot}/commit_amoeba.rb"
+            "program": "${workspaceRoot}/sqlite.rb"
         },
         {
             "name": "Listen for rdebug-ide",

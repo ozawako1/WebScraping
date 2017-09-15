@@ -11,6 +11,8 @@ require "jwt"
 require_relative "util"
 require_relative "webutil"
 require_relative "proc"
+require_relative "sqlite"
+
 
 HARVEST_FILTER_FORM = "expense_report_filter_form"
 HARVEST_FILTER_TYPE_DEPT = "departments"
@@ -564,8 +566,8 @@ class CWebAppChatwork
     def initialize(b_url, dbg = 0)
         
         @rooms = nil
-        @token = get_config("chatwork", "APIToken")
-
+        @token = get_config("chatwork", "APIToken-W")
+        
         uri = URI.parse(b_url)
         @http = Net::HTTP.new(uri.host, 443)
         @http.use_ssl = true
@@ -606,7 +608,8 @@ class CWebAppChatwork
         case res.code
         when "200"        
         when "204" #No Contents.
-            raise "Info. no contents."
+            #raise "Info. no contents."
+            return 
         else
             raise "Error. get new messages. (%s)"%[res.code]
         end 
@@ -616,13 +619,47 @@ class CWebAppChatwork
         me = get_me()
 
         r_msgs.each do |msg|
-            if (msg["body"].include?("[To:%d]"%me["account_id"])) then
-                repmsg = "・・・"
+
+            to_me = "[To:%d]"%me["account_id"]
+
+            if (msg["body"].include?(to_me)) then
+
+                ip = get_msg_contents(msg["body"])
+
+                user    = get_user_from_ipaddr(ip)
+                machine = get_machine_from_ipaddr(ip)
+
+                if (user.blank? && machine.blank?) then
+                    repmsg = "そのアドレス(%s)は、未使用です。"%ip
+                else
+                    repmsg = "そのアドレス(%s)は、"%ip
+                    if (user.blank? == false)
+                        repmsg += "%sさんが、"%user
+                    end
+                    if (machine.blank? == false)
+                        repmsg += "%sで使用しています。"%machine
+                    end
+                end
+
                 reply(room_name, msg, repmsg)
             end
         end
         
     end
+
+    def get_msg_contents(msg)
+    
+        #最初の改行までは、呼びかけ
+        pos = msg.index("\n")
+        msg = msg.slice(pos + 1, msg.length - pos)
+
+        #末尾に改行があれば取り除く
+        msg = msg.chomp()
+
+        return msg
+
+    end
+
 
     def get_me()
 

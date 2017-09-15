@@ -64,7 +64,10 @@ begin
     when TEST_CW_POST
         cw_post_msg("マイチャット", "test投稿", "kitamura@motex.co.jp")
     when TEST_CW_HELLO
-        cw_say_hello("部門長MTG")    
+
+
+                        
+        cw_say_hello("情シスbot（ベータ版）")    
     end
 
 rescue => e
