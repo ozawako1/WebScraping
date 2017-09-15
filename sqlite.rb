@@ -33,6 +33,7 @@ def prepare_ipaddr_table
     rescue => e
 
         p e
+        p e.backtrace
         p ip.to_s
         p counter
         
@@ -42,9 +43,6 @@ def prepare_ipaddr_table
     end
 
 end
-
-prepare_ipaddr_table()
-
 
 def is_ipaddress(ipaddr_s)
 
@@ -71,6 +69,7 @@ def get_user_from_ipaddr(ipaddr_s)
     end
 
     db = SQLite3::Database.new(IPADDR_DB)
+    db.busy_timeout(5000)
     db.transaction()
   
     begin
@@ -87,6 +86,7 @@ def get_user_from_ipaddr(ipaddr_s)
     rescue => e
         db.rollback()
         p e
+        p e.backtrace
 
     ensure
         db.close()
@@ -105,6 +105,7 @@ def get_machine_from_ipaddr(ipaddr_s)
     end
 
     db = SQLite3::Database.new(IPADDR_DB)
+    db.busy_timeout(5000)
     db.transaction()
 
     begin
@@ -122,7 +123,8 @@ def get_machine_from_ipaddr(ipaddr_s)
     rescue => e
         db.rollback()
         p e
-
+        p e.backtrace
+        
     ensure
         db.close()
     end
@@ -131,13 +133,13 @@ def get_machine_from_ipaddr(ipaddr_s)
         
 end
 
-begin
-    u = get_user_from_ipaddr("192.168.100.4")
-    m = get_machine_from_ipaddr("192.168.100.4")
-rescue => e
-    p e
-ensure
-    p u
-    p m
-end
+=begin
+
+u = get_user_from_ipaddr("172.17.103.1")
+m = get_machine_from_ipaddr("172.17.103.1")
+
+p u
+p m
+
+=end
 

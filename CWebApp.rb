@@ -629,16 +629,17 @@ class CWebAppChatwork
                 user    = get_user_from_ipaddr(ip)
                 machine = get_machine_from_ipaddr(ip)
 
-                if (user.blank? && machine.blank?) then
+                if (user == nil && machine == nil) then
                     repmsg = "そのアドレス(%s)は、未使用です。"%ip
                 else
                     repmsg = "そのアドレス(%s)は、"%ip
-                    if (user.blank? == false)
+                    if (user != nil)
                         repmsg += "%sさんが、"%user
                     end
-                    if (machine.blank? == false)
-                        repmsg += "%sで使用しています。"%machine
+                    if (machine != nil)
+                        repmsg += "%sで"%machine
                     end
+                    repmsg += "使用しています。"
                 end
 
                 reply(room_name, msg, repmsg)
