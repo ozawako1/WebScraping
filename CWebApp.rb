@@ -7,6 +7,8 @@ require "rubygems"
 #require 'securerandom'
 require "openssl"
 require "jwt"
+require 'jira-ruby'
+
 
 require_relative "util"
 require_relative "webutil"
@@ -73,6 +75,28 @@ GAROON_FORM_LOGIN = "login-form-slash"
 ECO_SEARCH_PAGE = "/cgi-bin/BSCD.cgi"
 
 HTTP_OK = "200"
+
+class CWebAppAncestor
+    attr_reader :base_url, :agent, :encoding, :doc
+    attr_accessor :debug
+    
+    def initialize (base_url, debug_mode)
+    end
+
+    def SetProxy(proxy_ipaddr, proxy_port)
+    end
+
+    def Login(page_login, form_login, info_login)
+    end
+
+    def Go(url)
+    end
+
+    def Execute(form_name, button_name = nil, script = 0)
+    end
+
+end
+
 
 
 class CWebApp
@@ -560,6 +584,65 @@ class CWebAppO365 < CWebApp
 end
 
 
+class CWebAppJira
+    attr_reader :http
+    attr_accessor :debug
+
+    def initialize(b_url, dbg = 0)
+        @debug = dbg
+
+    end
+
+    def Login(userid, password)
+        http = JIRA::Client.new(nil)
+
+
+    end
+
+    def get_projectid_by_name(project_key)
+        id = nil
+
+        project = @client.Project.find(project_key)
+        if (project == nil) then
+            return id
+        end
+        
+        id = project.id
+        
+        return project.id
+    end
+
+
+    def Post(project, summary, description, issuetype)
+# issue = client.Issue.build
+# issue.save({"fields"=>{"summary"=>"blarg from in example.rb","project"=>{"id"=>"10001"},"issuetype"=>{"id"=>"3"}}})
+# issue.fetch
+    end
+
+end
+
+=begin
+{
+    "fields": {
+       "project":
+       { 
+          "key": "TEST"
+       },
+       "summary": "REST ye merry gentlemen.",
+       "description": "Creating of an issue using project keys and issue type names using the REST API",
+       "issuetype": {
+          "name": "Bug"
+       }
+   }
+}
+{
+   "id":"39000",
+   "key":"TEST-101",
+    "self":"http://localhost:8090/rest/api/2/issue/39000"
+}
+=end
+
+
 class CWebAppChatwork
     attr_reader :token, :http, :rooms
 
@@ -575,9 +658,7 @@ class CWebAppChatwork
 
     end
 
-    def find_room(room_name)
-        
-        ret = ""
+    def prep_rooms()
 
         if (@rooms == nil) then
             # チャットの一覧を取得してお目当てのroomIDを探す
@@ -588,6 +669,15 @@ class CWebAppChatwork
             @rooms = JSON.parse(res.body)
         end
 
+    end
+
+
+    def find_room(room_name)
+        
+        ret = ""
+
+        prep_rooms()
+    
         @rooms.each do |j|
             if (j["name"] == room_name) then
                 ret = j["room_id"]
@@ -597,6 +687,59 @@ class CWebAppChatwork
 
         return ret
     end
+
+    def is_msg_forme( msg )
+    
+        ret = false
+
+        me = get_me()
+
+        to_me = "[To:%d]"%me["account_id"]
+
+        if (msg["body"].include?(to_me)) then
+            ret = true
+        end
+
+        return ret 
+
+    end
+
+
+    def reply_rooms( func )
+    
+        prep_rooms()
+
+        @rooms.each do |r|
+
+            #自分宛のメッセージ、未読メッセージがなければスキップ
+            if ((r["mention_num"] == 0) || (r["unread_num"] == 0)) then
+                next
+            end 
+
+            #メッセージ一覧を取得
+            res = @http.get("/v2/rooms/" + r["room_id"].to_s + "/messages?force=0", {"X-ChatWorkToken" => @token})
+            
+            case res.code
+            when "200"        
+            when "204" #No Contents.
+                next 
+            else
+                raise "Error. get new messages. (%s)"%[res.code]
+            end                     
+
+            r_msgs = JSON.parse(res.body)
+            r_msgs.each do |msg|
+                if (is_msg_forme(msg["body"]) == true) then
+                    contents = get_msg_contents(msg["body"])
+                    repmsg = func.call(contents)
+                    reply(room_name, msg, repmsg)
+                end
+            end            
+        end
+
+
+    end
+
 
     def say_hello( room_name )
         
@@ -642,6 +785,10 @@ class CWebAppChatwork
                     repmsg += "使用しています。"
                 end
 
+                segment = get_segment_from_idpaddr(ip)
+
+                repmsg += "セグメントは %s です。"%segment
+
                 reply(room_name, msg, repmsg)
             end
         end
@@ -664,13 +811,18 @@ class CWebAppChatwork
 
     def get_me()
 
-        res = @http.get("/v2/me", {"X-ChatWorkToken" => @token})
-        if (res.code != "200") 
-            raise "Error. get rooms error." + res.code
+        if (@me == nil) then
+
+            res = @http.get("/v2/me", {"X-ChatWorkToken" => @token})
+            if (res.code != "200") 
+                raise "Error. get rooms error." + res.code
+            end
+
+            @me = JSON.parse(res.body)
+
         end
 
-        me = JSON.parse(res.body)
-    
+        return @me
     end
 
 

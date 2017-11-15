@@ -50,6 +50,7 @@ begin
                     chatmsg += "サービス名: " + s_name + "\r\n"
                     chatmsg += "サービス状態: " + s_status + "\r\n"
                     chatmsg += "障害概要: " + msg["Title"]
+		    chatmsg += "https://portal.office.com/adminportal/home#/servicehealth"
                     chatmsg += "[/info]（※このメッセージは、自動送信です。）\r\n"                                              
 
                     cw_post_msg(board, chatmsg)                    

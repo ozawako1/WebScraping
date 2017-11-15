@@ -3,10 +3,58 @@
 
 require_relative "util"
 require_relative "CWebApp"
+require_relative "sqlite"
 
 NO_DEBUG = 0
 
-def cw_say_hello(room_name)
+def proc_make_msg(from_msg)
+    
+    repmsg = ""
+    
+    user    = get_user_from_ipaddr(from_msg)
+    machine = get_machine_from_ipaddr(from_msg)
+
+    if ((user.nil? || user.empty?) && (machine.nil? || machine.empty?)) then
+        repmsg = "そのアドレス(%s)は、未使用です。"%from_msg
+    else
+        repmsg = "そのアドレス(%s)は、"%from_msg
+        if (user != nil)
+            repmsg += "%sさんが、"%user
+        end
+        if (machine != nil)
+            repmsg += "%sで"%machine
+        end
+        repmsg += "使用しています。"
+    end
+
+    return repmsg
+end
+
+def cw_reply(room_name)
+    
+        chatwork = CWebAppChatwork.new("https://api.chatwork.com", NO_DEBUG)
+        if chatwork == nil
+            puts("Init Error.")
+            exit
+        end
+    
+        body = ""
+    
+        begin
+    
+            chatwork.say_hello(room_name)
+    
+        rescue => e
+            
+            p e
+            p e.backtrace
+            p Time.now
+    
+        end
+    end
+
+def cw_say_hello()
+
     chatwork = CWebAppChatwork.new("https://api.chatwork.com", NO_DEBUG)
     if chatwork == nil
         puts("Init Error.")
@@ -17,7 +65,7 @@ def cw_say_hello(room_name)
 
     begin
 
-        chatwork.say_hello(room_name)
+        chatwork.reply_rooms(method(:proc_make_msg))
 
     rescue => e
         
@@ -63,7 +111,7 @@ def cw_post_msg(room_name, msg, to_email = nil, cc_email = nil)
     end
 end
 
-
-cw_say_hello("情シスbot（ベータ版）")
+cw_reply("情シスbot（ベータ版）")
+#cw_say_hello()
 
 
