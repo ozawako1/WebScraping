@@ -584,64 +584,6 @@ class CWebAppO365 < CWebApp
 end
 
 
-class CWebAppJira
-    attr_reader :http
-    attr_accessor :debug
-
-    def initialize(b_url, dbg = 0)
-        @debug = dbg
-
-    end
-
-    def Login(userid, password)
-        http = JIRA::Client.new(nil)
-
-
-    end
-
-    def get_projectid_by_name(project_key)
-        id = nil
-
-        project = @client.Project.find(project_key)
-        if (project == nil) then
-            return id
-        end
-        
-        id = project.id
-        
-        return project.id
-    end
-
-
-    def Post(project, summary, description, issuetype)
-# issue = client.Issue.build
-# issue.save({"fields"=>{"summary"=>"blarg from in example.rb","project"=>{"id"=>"10001"},"issuetype"=>{"id"=>"3"}}})
-# issue.fetch
-    end
-
-end
-
-=begin
-{
-    "fields": {
-       "project":
-       { 
-          "key": "TEST"
-       },
-       "summary": "REST ye merry gentlemen.",
-       "description": "Creating of an issue using project keys and issue type names using the REST API",
-       "issuetype": {
-          "name": "Bug"
-       }
-   }
-}
-{
-   "id":"39000",
-   "key":"TEST-101",
-    "self":"http://localhost:8090/rest/api/2/issue/39000"
-}
-=end
-
 
 class CWebAppChatwork
     attr_reader :token, :http, :rooms
@@ -887,6 +829,50 @@ class CWebAppChatwork
 
     end
 
+    def chat_msg2 (room_name, msg, to_arr = nil, cc_arr = nil)
+
+        ret = ""
+        body = ""
+
+        room_id = find_room(room_name)
+        
+        if to_arr != nil then
+            to_user = ""
+            to_arr.each {|to|
+                to_user = get_CW_to_format(to)
+                body += to_user
+                body += "\r\n"
+            }
+        end
+
+        if cc_arr != nil then
+            cc_user = ""
+            cc_arr.each {|cc|
+                cc_user = get_CW_to_format(cc, false)
+                body += cc_user
+            }
+            body += "\r\n"
+        end
+
+        body += msg
+
+        req = Net::HTTP::Post.new("/v2/rooms/" + room_id.to_s + "/messages")
+        
+        req["X-ChatWorkToken"] = @token
+
+        req.set_form_data({"body" => body})
+        
+        res = @http.request(req)
+        if (res.code != "200") then
+            raise "Error. post message error." + res.code
+        end
+
+        # 正常に投稿されるとメッセージIDが返る
+        ret = JSON.parse(res.body)
+
+        return ret 
+
+    end
 
     def flush_user_master()
         #account_id, room_id, name, chatwork_id, organization_id, organization_name, department, avatar_image_url
@@ -1146,7 +1132,8 @@ class CWebAppO365
         ret = false
 
         case service_id
-        when "Exchange", "OneDriveForBusiness", "OrgLiveID", "OSDPPlatform", "OSub", "PowerBIcom", "SharePoint" then
+#       when "Exchange", "OneDriveForBusiness", "OrgLiveID", "OSDPPlatform", "OSub", "PowerBIcom", "SharePoint" then
+        when "Exchange", "OneDriveForBusiness", "OrgLiveID", "OSDPPlatform", "OSub", "SharePoint" then
             ret = true
         end
 

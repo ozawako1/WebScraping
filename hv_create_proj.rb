@@ -58,7 +58,6 @@ Harvest::Project
 
 require "harvested"
 require_relative "util"
-#require_relative "o365_mail"
 require_relative "cw_post"
 
 CLIENT_NAME = "Motex Inc."
